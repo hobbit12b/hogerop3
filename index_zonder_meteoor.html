@@ -1,0 +1,2404 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Letter-Stuiter Ruimtereis</title>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    font-family: var(--game-font-stack, "Century Gothic", CenturyGothic, Arial, sans-serif);
+    font-weight: 700;
+}
+#root, .app {
+    width: 100%;
+    height: 100%;
+}
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+}
+.ui-pill {
+    position: fixed;
+    top: 16px;
+    background: rgba(255,255,255,0.92);
+    color: #24303a;
+    border-radius: 999px;
+    padding: 12px 18px;
+    font-weight: 700;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+    z-index: 10;
+}
+
+.score-pill {
+    left: 16px;
+    font-size: 18px;
+}
+.top-icon-btn {
+    position: fixed;
+    top: 16px;
+    z-index: 12;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.music-toggle-btn {
+    right: 16px;
+    min-width: 64px;
+    height: 64px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.94);
+    color: #24303a;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.20);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 31px;
+}
+.music-toggle-btn:active {
+    transform: scale(0.96);
+}
+.repeat-question-btn {
+    left: 50%;
+    transform: translateX(-50%);
+    background: transparent;
+    box-shadow: none;
+}
+.repeat-question-btn img {
+    display: block;
+    width: min(180px, 34vw);
+    height: auto;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.28));
+    transition: transform 0.12s ease, filter 0.12s ease, opacity 0.12s ease;
+}
+.repeat-question-btn.pressed img {
+    transform: scale(0.94);
+    filter: drop-shadow(0 0 0 rgba(0,0,0,0)) brightness(0.88);
+}
+.repeat-question-btn.disabled img {
+    opacity: 0.55;
+    filter: grayscale(0.18) drop-shadow(0 6px 10px rgba(0,0,0,0.16));
+}
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+    padding: 24px;
+}
+.panel {
+    width: 100%;
+    max-width: 420px;
+    background: rgba(255,255,255,0.96);
+    border-radius: 32px;
+    padding: 32px 28px;
+    text-align: center;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.22);
+    color: #24303a;
+}
+.panel h1 {
+    margin: 0 0 14px;
+    font-size: 42px;
+    line-height: 1.05;
+}
+.panel p {
+    margin: 0 0 10px;
+    font-size: 22px;
+    line-height: 1.4;
+}
+.panel .sub {
+    font-size: 18px;
+    color: #5f6b79;
+    margin-bottom: 24px;
+}
+.start-btn {
+    border: 0;
+    border-radius: 20px;
+    padding: 18px 34px;
+    background: #ffd84d;
+    color: #24303a;
+    font-size: 28px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #e6bc21;
+}
+.start-btn:active {
+    transform: translateY(6px);
+    box-shadow: none;
+}
+
+.settings-toggle {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 35;
+    width: 60px;
+    height: 60px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.95);
+    box-shadow: 0 8px 22px rgba(0,0,0,0.22);
+    font-size: 28px;
+    cursor: pointer;
+}
+.settings-panel {
+    position: fixed;
+    right: 16px;
+    bottom: 88px;
+    z-index: 35;
+    width: min(420px, calc(100vw - 24px));
+    max-height: calc(100vh - 112px);
+    overflow: auto;
+    background: rgba(255,255,255,0.97);
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.22);
+    padding: 18px 18px 14px;
+    color: #24303a;
+}
+.settings-title {
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 12px;
+}
+.slider-group {
+    margin-bottom: 14px;
+}
+.slider-group label {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+.slider-group input[type="range"] {
+    width: 100%;
+}
+.slider-help {
+    font-size: 13px;
+    line-height: 1.35;
+    color: #5f6b79;
+}
+
+.settings-subtitle {
+    font-size: 14px;
+    color: #5f6b79;
+    margin: -2px 0 14px;
+}
+.settings-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 10px 0 12px;
+}
+.mini-btn {
+    border: 0;
+    border-radius: 14px;
+    padding: 10px 14px;
+    background: #edf3fb;
+    color: #24303a;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.letter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+.letter-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f5f7fb;
+    border: 2px solid transparent;
+    border-radius: 14px;
+    padding: 10px 12px;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    user-select: none;
+}
+.letter-chip.active {
+    background: #fff4bf;
+    border-color: #f1b400;
+}
+.letter-chip input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+}
+.letters-note {
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.35;
+    color: #5f6b79;
+}
+.warning-note {
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #c44747;
+}
+.start-btn[disabled],
+.mini-btn[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.loading-note {
+    margin-top: 12px;
+    font-size: 16px;
+    color: #5f6b79;
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const ALL_LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
+const TREATED_LETTERS = ["w", "r", "p", "a", "s", "g", "h", "k", "l", "v", "b", "m"];
+const DEFAULT_SELECTED_LETTERS = [...TREATED_LETTERS];
+const PLATFORM_H = 24;
+const CIRCLE_R_RATIO = 0.08;
+const PLAYER_R_RATIO = 0.06;
+const CAMERA_LERP = 0.08;
+const DEFAULT_JUMP_FRAMES = 28;
+const DEFAULT_JUMP_ARC_RATIO = 0.34;
+const DEFAULT_ASTRONAUT_SCALE = 2.30;
+const DEFAULT_IDLE_ANIM_FPS = 10;
+const DEFAULT_JUMP_ANIM_SPEED = 0.6;
+const PLAYER_PLATFORM_SINK = 10;
+const HIT_PADDING_X = 26;
+const HIT_PADDING_Y = 26;
+
+function getPlatformFontStack() {
+    const ua = navigator.userAgent || "";
+    const platform = navigator.platform || "";
+    const maxTouchPoints = navigator.maxTouchPoints || 0;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (platform === "MacIntel" && maxTouchPoints > 1);
+    if (isIOS) {
+        return `"Chalkboard SE", "ChalkboardSE-Regular", "Marker Felt", "Noteworthy", cursive`;
+    }
+    const isWindows = /Win/.test(platform) || /Windows/.test(ua);
+    if (isWindows) {
+        return `"Century Gothic", CenturyGothic, Arial, sans-serif`;
+    }
+    return `"Century Gothic", CenturyGothic, Arial, sans-serif`;
+}
+
+const DISPLAY_FONT_STACK = getPlatformFontStack();
+document.documentElement.style.setProperty("--game-font-stack", DISPLAY_FONT_STACK);
+const GROUND_LAYER_SPEED = 0.34;
+const MOUNTAINS_LAYER_SPEED = 0.22;
+const CLOUDS_LAYER_SPEED = 0.14;
+const SPACE_START = 1350;
+const STAR_FIELD_START = 1550;
+const MAX_VISIBLE_SPACE_OBJECTS = 1;
+const MOON_SCORE = 8;
+const SATELLITE_SCORE = 14;
+const SPACE_RANDOM_START_SCORE = 20;
+const SPACE_RANDOM_INTERVAL = 6;
+const FLYBY_VISIBILITY_START_SCORE = 1;
+const FLYBY_VISIBILITY_SCORE_RANGE = 1;
+const ROCKET_FLYBY_START_SCORE = 10;
+const ROCKET_FLYBY_FIRST_TICK_MIN = 90;
+const ROCKET_FLYBY_FIRST_TICK_MAX = 180;
+const ROCKET_FLYBY_TICK_MIN = 900;
+const ROCKET_FLYBY_TICK_MAX = 2100;
+/* Raketvuur gebruikt dezelfde lokale pixelcoördinaten als raket-only-flight-test.html. */
+const ROCKET_FLAME_BASE_SIZE = 180;
+const ROCKET_FLAME_X = 0;
+const ROCKET_FLAME_Y = 92;
+const ROCKET_FLAME_ANGLE = Math.PI / 2;
+const ROCKET_FLAME_LENGTH = 78;
+const ROCKET_FLAME_WIDTH = 36;
+const ROCKET_SMOKE_X = 0;
+const ROCKET_SMOKE_Y = 126;
+const METEOR_FLYBY_START_SCORE = 30;
+const METEOR_FLYBY_FIRST_TICK_MIN = 240;
+const METEOR_FLYBY_FIRST_TICK_MAX = 540;
+const METEOR_FLYBY_TICK_MIN = 1800;
+const METEOR_FLYBY_TICK_MAX = 3600;
+const METEOR_FLYBY_CHANCE = 1;
+const METEOR_FLYBY_COOLDOWN = 3;
+const METEOR_SMOKE_PUFFS = 8;
+const METEOR_SMOKE_LENGTH = 1.28;
+const FIXED_SPACE_SCORE_EVENTS = Object.freeze({
+    [MOON_SCORE]: "planet07",
+    [SATELLITE_SCORE]: "satellite"
+});
+const RANDOM_SPACE_TYPES = Object.freeze([
+    "ufo",
+    "planet01",
+    "planet02",
+    "planet03",
+    "planet04",
+    "planet05",
+    "planet06"
+]);
+const BACKGROUND_MUSIC_BASE = "Sterrenvriendjes";
+const REPEAT_BUTTON_SRC = "herhaal-vraag.png";
+const FALL_DRAW_SCALE = 1.16;
+const FALL_SOURCE_CROP_RIGHT = 10;
+const CAMERA_DROP_DISTANCE_FACTOR = 0.96;
+const RESPAWN_FADE_PORTION = 0.42;
+const ASTRONAUT_VIDEO_SRC = "astronaut_jump.mp4";
+const ASTRONAUT_FALL_VIDEO_SRC = "val.mp4";
+const ASTRONAUT_FALL_TOTAL_FRAMES = 20;
+const ASTRONAUT_TOTAL_FRAMES = 16;
+const ASTRONAUT_JUMP_FRAME_SEQUENCE = [6, 7, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0];
+const ASTRONAUT_JUMP_MOTION_STOPS = [0.0, 0.08, 0.18, 0.42, 0.47, 0.5, 0.58, 0.68, 0.78, 0.88, 0.96, 1.0];
+const FALL_ANIMATION_FRAMES = 48;
+const WRONG_FALL_START_OFFSET = 14;
+const FRAME_TIME_AT_60FPS = 1000 / 60;
+const RESPAWN_JUMP_FRAMES = 28;
+const AUDIO_MIME_TYPES = {
+    ogg: 'audio/ogg; codecs="vorbis"',
+    mp3: 'audio/mpeg'
+};
+
+function browserSupportsOgg() {
+    const audio = document.createElement("audio");
+    if (!audio || typeof audio.canPlayType !== "function") return false;
+    const result = audio.canPlayType(AUDIO_MIME_TYPES.ogg);
+    return !!result && result !== "no";
+}
+
+const AUDIO_FORMAT_ORDER = browserSupportsOgg() ? ["ogg", "mp3"] : ["mp3", "ogg"];
+
+function createAudioSourceSet(baseName) {
+    return AUDIO_FORMAT_ORDER.map((ext) => ({
+        src: `${baseName}.${ext}`,
+        type: AUDIO_MIME_TYPES[ext]
+    }));
+}
+
+function createAudioElementWithFallback(sourceSet) {
+    const audio = document.createElement("audio");
+    sourceSet.forEach((entry) => {
+        const source = document.createElement("source");
+        source.src = entry.src;
+        source.type = entry.type;
+        audio.appendChild(source);
+    });
+    audio.load();
+    return audio;
+}
+
+const LETTER_AUDIO_VARIANTS = {
+    "a": ["a01", "a02", "a03"],
+    "b": ["b01", "b02", "b03"],
+    "d": ["d01", "d02", "d03"],
+    "e": ["e01", "e02", "e03"],
+    "f": ["f01", "f02", "f03"],
+    "g": ["g01", "g02", "g03"],
+    "h": ["h01", "h02", "h03"],
+    "i": ["i01", "i02", "i03"],
+    "j": ["j01", "j02", "j03"],
+    "k": ["k01", "k02", "k03"],
+    "l": ["l01", "l02", "l03"],
+    "m": ["m01", "m02", "m03"],
+    "n": ["n01", "n02", "n03"],
+    "o": ["o01", "o02", "o03"],
+    "p": ["p01", "p02", "p03", "p04"],
+    "r": ["r01", "r02", "r03"],
+    "s": ["s01", "s02", "s03"],
+    "t": ["t01", "t02", "t03"],
+    "u": ["u01"],
+    "v": ["v01", "v02", "v03"],
+    "w": ["w01", "w02", "w03"],
+    "x": ["x01"],
+    "y": ["y01"],
+    "z": ["z01", "z02", "z03"],
+};
+
+const LETTER_AUDIO_SOURCES = Object.fromEntries(
+    Object.entries(LETTER_AUDIO_VARIANTS).map(([letter, stems]) => [
+        letter,
+        stems.map((stem) => createAudioSourceSet(stem))
+    ])
+);
+
+const PLAYABLE_LETTERS = ALL_LETTERS.filter((letter) => Array.isArray(LETTER_AUDIO_SOURCES[letter]) && LETTER_AUDIO_SOURCES[letter].length > 0);
+
+function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+}
+function lerp(a, b, t) { return a + (b - a) * t; }
+function quadraticBezier(p0, p1, p2, t) {
+    const mt = 1 - t;
+    return (mt * mt * p0) + (2 * mt * t * p1) + (t * t * p2);
+}
+function quadraticBezierTangent(p0, p1, p2, t) {
+    return 2 * (1 - t) * (p1 - p0) + 2 * t * (p2 - p1);
+}
+function easeInOut(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+function smoothStep(edge0, edge1, x) {
+    const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
+    return t * t * (3 - 2 * t);
+}
+function getJumpAnimationState(progress, totalFrames) {
+    const safeFrameCount = Math.max(1, totalFrames || ASTRONAUT_TOTAL_FRAMES);
+    const frameSequence = ASTRONAUT_JUMP_FRAME_SEQUENCE.map((frameIndex) => clamp(frameIndex, 0, safeFrameCount - 1));
+    const motionStops = ASTRONAUT_JUMP_MOTION_STOPS;
+    const clampedProgress = clamp(progress, 0, 1);
+
+    if (!frameSequence.length) {
+        return { frameIndex: 0, motionProgress: clampedProgress };
+    }
+
+    const scaled = clampedProgress * Math.max(1, frameSequence.length - 1);
+    const baseIndex = Math.min(frameSequence.length - 1, Math.floor(scaled));
+    const nextIndex = Math.min(frameSequence.length - 1, baseIndex + 1);
+    const localT = scaled - baseIndex;
+    const startMotion = motionStops[Math.min(baseIndex, motionStops.length - 1)] ?? clampedProgress;
+    const endMotion = motionStops[Math.min(nextIndex, motionStops.length - 1)] ?? clampedProgress;
+
+    return {
+        frameIndex: frameSequence[baseIndex],
+        motionProgress: lerp(startMotion, endMotion, localT)
+    };
+}
+function getPlayerContactY(platformY, circleR) {
+    return platformY - 32 + circleR + PLAYER_PLATFORM_SINK;
+}
+function orderLetters(list) {
+    const wanted = new Set(list);
+    return PLAYABLE_LETTERS.filter(letter => wanted.has(letter));
+}
+function createTwinkleStars(count = 40) {
+    return Array.from({ length: count }, (_, i) => ({
+        x: (i * 0.173) % 1,
+        y: (i * 0.127 + 0.11) % 1,
+        size: 1.0 + (i % 5) * 0.5,
+        twinkle: 0.012 + (i % 7) * 0.0035,
+        alpha: 0.22 + (i % 6) * 0.08,
+        phase: i * 1.31,
+        wobble: 2 + (i % 4) * 1.7,
+        depth: 0.012 + (i % 3) * 0.009,
+        sparkle: i % 7 === 0
+    }));
+}
+
+function estimateBorderColor(data, width, height) {
+    let r = 0, g = 0, b = 0, count = 0;
+    const samplePixel = (x, y) => {
+        const idx = (y * width + x) * 4;
+        r += data[idx]; g += data[idx + 1]; b += data[idx + 2]; count++;
+    };
+    for (let x = 0; x < width; x += 6) { samplePixel(x, 0); samplePixel(x, height - 1); }
+    for (let y = 0; y < height; y += 6) { samplePixel(0, y); samplePixel(width - 1, y); }
+    return { r: Math.round(r / Math.max(1, count)), g: Math.round(g / Math.max(1, count)), b: Math.round(b / Math.max(1, count)) };
+}
+function colorDistance(data, idx, bg) {
+    return Math.abs(data[idx] - bg.r) + Math.abs(data[idx + 1] - bg.g) + Math.abs(data[idx + 2] - bg.b);
+}
+function removeConnectedBackground(canvas) {
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const width = canvas.width;
+    const height = canvas.height;
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+    const bg = estimateBorderColor(data, width, height);
+    const visited = new Uint8Array(width * height);
+    const queue = new Uint32Array(width * height);
+    let head = 0, tail = 0;
+    const threshold = 60, featherThreshold = 84;
+
+    const tryEnqueue = (x, y) => {
+        if (x < 0 || y < 0 || x >= width || y >= height) return;
+        const pos = y * width + x;
+        if (visited[pos]) return;
+        visited[pos] = 1;
+        const idx = pos * 4;
+        if (data[idx + 3] === 0) { queue[tail++] = pos; return; }
+        if (colorDistance(data, idx, bg) <= threshold) {
+            queue[tail++] = pos;
+            data[idx + 3] = 0;
+        }
+    };
+
+    for (let x = 0; x < width; x++) { tryEnqueue(x, 0); tryEnqueue(x, height - 1); }
+    for (let y = 0; y < height; y++) { tryEnqueue(0, y); tryEnqueue(width - 1, y); }
+
+    while (head < tail) {
+        const pos = queue[head++];
+        const x = pos % width;
+        const y = Math.floor(pos / width);
+        tryEnqueue(x + 1, y); tryEnqueue(x - 1, y); tryEnqueue(x, y + 1); tryEnqueue(x, y - 1);
+    }
+
+    for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+            const pos = y * width + x;
+            const idx = pos * 4;
+            if (data[idx + 3] === 0) continue;
+            const dist = colorDistance(data, idx, bg);
+            if (dist > featherThreshold) continue;
+            const neighbors = [
+                ((y - 1) * width + x) * 4,
+                ((y + 1) * width + x) * 4,
+                (y * width + (x - 1)) * 4,
+                (y * width + (x + 1)) * 4
+            ];
+            const touchesTransparent = neighbors.some(nIdx => data[nIdx + 3] === 0);
+            if (touchesTransparent) {
+                const softness = clamp((dist - threshold) / Math.max(1, featherThreshold - threshold), 0, 1);
+                data[idx + 3] = Math.round(255 * softness);
+            }
+        }
+    }
+    ctx.putImageData(imageData, 0, 0);
+    return canvas;
+}
+function getOpaqueBounds(canvas, alphaThreshold = 8) {
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const { width, height } = canvas;
+    const data = ctx.getImageData(0, 0, width, height).data;
+    let minX = width, minY = height, maxX = -1, maxY = -1;
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const idx = (y * width + x) * 4;
+            if (data[idx + 3] > alphaThreshold) {
+                if (x < minX) minX = x;
+                if (y < minY) minY = y;
+                if (x > maxX) maxX = x;
+                if (y > maxY) maxY = y;
+            }
+        }
+    }
+    if (maxX < minX || maxY < minY) return null;
+    return { minX, minY, maxX, maxY };
+}
+function cropCanvas(canvas, bounds, padding = 8) {
+    const left = clamp(bounds.minX - padding, 0, canvas.width - 1);
+    const top = clamp(bounds.minY - padding, 0, canvas.height - 1);
+    const right = clamp(bounds.maxX + padding, 0, canvas.width - 1);
+    const bottom = clamp(bounds.maxY + padding, 0, canvas.height - 1);
+    const width = Math.max(1, right - left + 1);
+    const height = Math.max(1, bottom - top + 1);
+    const cropped = document.createElement("canvas");
+    cropped.width = width; cropped.height = height;
+    const ctx = cropped.getContext("2d", { willReadFrequently: true });
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(canvas, left, top, width, height, 0, 0, width, height);
+    return cropped;
+}
+function seekVideo(video, time) {
+    return new Promise((resolve) => {
+        const onSeeked = () => { video.removeEventListener("seeked", onSeeked); resolve(); };
+        video.addEventListener("seeked", onSeeked, { once: true });
+        video.currentTime = Math.min(Math.max(time, 0), Math.max(0, video.duration - 0.001));
+    });
+}
+async function extractAstronautFrames(video, asset, frameCount = ASTRONAUT_TOTAL_FRAMES) {
+    try {
+        const safeFrameCount = Math.max(1, Math.round(frameCount || ASTRONAUT_TOTAL_FRAMES));
+        const frameSlice = video.duration / Math.max(1, safeFrameCount);
+        const times = Array.from({ length: safeFrameCount }, (_, i) => {
+            const centeredTime = (i * frameSlice) + (frameSlice * 0.5);
+            return Math.min(centeredTime, Math.max(0, video.duration - 0.001));
+        });
+
+        const rawFrames = [];
+        let unionBounds = null;
+
+        for (const time of times) {
+            await seekVideo(video, time);
+            const frameCanvas = document.createElement("canvas");
+            frameCanvas.width = video.videoWidth;
+            frameCanvas.height = video.videoHeight;
+            const fctx = frameCanvas.getContext("2d", { willReadFrequently: true });
+            fctx.imageSmoothingEnabled = true;
+            fctx.imageSmoothingQuality = "high";
+            fctx.drawImage(video, 0, 0, frameCanvas.width, frameCanvas.height);
+            removeConnectedBackground(frameCanvas);
+            rawFrames.push(frameCanvas);
+
+            const bounds = getOpaqueBounds(frameCanvas);
+            if (bounds) {
+                unionBounds = unionBounds ? {
+                    minX: Math.min(unionBounds.minX, bounds.minX),
+                    minY: Math.min(unionBounds.minY, bounds.minY),
+                    maxX: Math.max(unionBounds.maxX, bounds.maxX),
+                    maxY: Math.max(unionBounds.maxY, bounds.maxY)
+                } : bounds;
+            }
+        }
+
+        asset.frames = unionBounds ? rawFrames.map((frame) => cropCanvas(frame, unionBounds, 10)) : rawFrames;
+        asset.aspect = asset.frames[0] ? asset.frames[0].width / Math.max(1, asset.frames[0].height) : (video.videoWidth / Math.max(1, video.videoHeight));
+        asset.ready = asset.frames.length > 0;
+        asset.loading = false;
+    } catch (error) {
+        console.error("Kon astronaut frames niet laden:", error);
+        asset.ready = false; asset.loading = false; asset.failed = true;
+    }
+}
+function createAstronautAsset(src, frameCount = ASTRONAUT_TOTAL_FRAMES) {
+    const asset = { frames: [], ready: false, loading: true, failed: false, aspect: 520 / 900 };
+    const video = document.createElement("video");
+    video.src = src; video.preload = "auto"; video.muted = true; video.playsInline = true; video.crossOrigin = "anonymous";
+    const startExtraction = async () => {
+        if (!video.duration || !video.videoWidth || !video.videoHeight) return;
+        await extractAstronautFrames(video, asset, frameCount);
+    };
+    video.addEventListener("loadeddata", startExtraction, { once: true });
+    video.addEventListener("error", () => { asset.loading = false; asset.failed = true; }, { once: true });
+    video.load();
+    return asset;
+}
+
+function loadAssets() {
+    const createBlackTransparentAsset = (src, threshold = 28) => {
+        const img = new Image();
+        const asset = { img, canvas: null, ready: false };
+        img.onload = () => {
+            const off = document.createElement("canvas");
+            off.width = img.width; off.height = img.height;
+            const ictx = off.getContext("2d");
+            ictx.imageSmoothingEnabled = true; ictx.imageSmoothingQuality = "high";
+            ictx.drawImage(img, 0, 0);
+            const imageData = ictx.getImageData(0, 0, off.width, off.height);
+            const d = imageData.data;
+            for (let i = 0; i < d.length; i += 4) {
+                const r = d[i], g = d[i + 1], b = d[i + 2], a = d[i + 3];
+                const max = Math.max(r, g, b);
+                if (a > 0 && max <= threshold) d[i + 3] = 0;
+                else if (a > 0 && max <= threshold + 18) d[i + 3] = Math.round(a * 0.35);
+            }
+            ictx.putImageData(imageData, 0, 0);
+            asset.canvas = off; asset.ready = true;
+        };
+        img.src = src;
+        return asset;
+    };
+
+    const createTransparentAsset = (src, padding = 8) => {
+        const img = new Image();
+        const asset = { img, canvas: null, ready: false };
+        img.onload = () => {
+            const off = document.createElement("canvas");
+            off.width = img.width; off.height = img.height;
+            const ictx = off.getContext("2d", { willReadFrequently: true });
+            ictx.imageSmoothingEnabled = true; ictx.imageSmoothingQuality = "high";
+            ictx.drawImage(img, 0, 0);
+            const bounds = getOpaqueBounds(off);
+            asset.canvas = bounds ? cropCanvas(off, bounds, padding) : off;
+            asset.ready = true;
+        };
+        img.src = src;
+        return asset;
+    };
+
+    const createImageAsset = (src) => {
+        const img = new Image();
+        const asset = { img, ready: false };
+        img.onload = () => { asset.ready = true; };
+        img.src = src;
+        return asset;
+    };
+
+    return {
+        ground: createBlackTransparentAsset("assets/bg-ground.png", 18),
+        mountains: createBlackTransparentAsset("assets/bg-mountains.png", 20),
+        clouds: createBlackTransparentAsset("assets/bg-clouds.png", 18),
+        rocket: createImageAsset("assets/raket.png"),
+        satellite: createTransparentAsset("assets/sateliet.png", 10),
+        ufo: createTransparentAsset("assets/ufo.png", 10),
+        meteor: createTransparentAsset("assets/meteoor.png", 8),
+        planet01: createTransparentAsset("assets/planeet01.png", 8),
+        planet02: createTransparentAsset("assets/planeet02.png", 8),
+        planet03: createTransparentAsset("assets/planeet03.png", 8),
+        planet04: createTransparentAsset("assets/planeet04.png", 8),
+        planet05: createTransparentAsset("assets/planeet05.png", 8),
+        planet06: createTransparentAsset("assets/planeet06.png", 8),
+        planet07: createTransparentAsset("assets/planeet07.png", 8),
+        astronaut: createAstronautAsset(ASTRONAUT_VIDEO_SRC),
+        astronautFall: createAstronautAsset(ASTRONAUT_FALL_VIDEO_SRC, ASTRONAUT_FALL_TOTAL_FRAMES),
+        repeatButton: createImageAsset(REPEAT_BUTTON_SRC)
+    };
+}
+
+/* NOTE:
+   Dit bestand is functioneel hetzelfde als index20uur.html, met alleen deze flyby-fix:
+   - raket/meteoor starten iets minder ver buiten beeld
+   - out-of-view marge is groter en schermafhankelijk
+*/
+
+function App() {
+    const canvasRef = useRef(null);
+    const [score, setScore] = useState(0);
+    const [gameState, setGameState] = useState("start");
+    const [targetLetter, setTargetLetter] = useState("");
+    const [showSettings, setShowSettings] = useState(false);
+    const [selectedLetters, setSelectedLetters] = useState(() => [...DEFAULT_SELECTED_LETTERS]);
+    const [settings, setSettings] = useState({
+        astronautScale: DEFAULT_ASTRONAUT_SCALE,
+        jumpFrames: DEFAULT_JUMP_FRAMES,
+        idleAnimFps: DEFAULT_IDLE_ANIM_FPS,
+        jumpAnimSpeed: DEFAULT_JUMP_ANIM_SPEED
+    });
+    const canStartGame = selectedLetters.length >= 2;
+    const assetsRef = useRef(null);
+    if (!assetsRef.current) assetsRef.current = loadAssets();
+    const letterAudioRefs = useRef({});
+    const activeLetterAudioRef = useRef(null);
+    const backgroundMusicRef = useRef(null);
+    const musicWasPlayingBeforeHideRef = useRef(false);
+    const [musicEnabled, setMusicEnabled] = useState(true);
+    const [musicReady, setMusicReady] = useState(false);
+    const [musicFailed, setMusicFailed] = useState(false);
+    const [repeatPressed, setRepeatPressed] = useState(false);
+    const repeatPressedRef = useRef(false);
+    const repeatButtonRectRef = useRef({ x: 0, y: 0, w: 0, h: 0, enabled: false });
+
+    const stateRef = useRef({
+        gameState: "start",
+        score: 0,
+        targetLetter: "",
+        selectedLetters: [...DEFAULT_SELECTED_LETTERS],
+        settings: {
+            astronautScale: DEFAULT_ASTRONAUT_SCALE,
+            jumpFrames: DEFAULT_JUMP_FRAMES,
+            idleAnimFps: DEFAULT_IDLE_ANIM_FPS,
+            jumpAnimSpeed: DEFAULT_JUMP_ANIM_SPEED
+        },
+        time: { lastTs: 0, tick: 0, idleFrameClock: 0 },
+        currentPlatform: null,
+        oldPlatforms: [],
+        nextPlatforms: [],
+        pendingNextPlatforms: [],
+        chosenTarget: null,
+        fallingPlatform: null,
+        landingPauseTimer: 0,
+        cameraY: 0,
+        targetCameraY: 0,
+        baseCameraY: 0,
+        width: 0,
+        height: 0,
+        dpr: 1,
+        viewOffset: 0,
+        bounceHeight: 0,
+        jumpArc: 0,
+        respawnT: 0,
+        respawnStartX: 0,
+        respawnStartY: 0,
+        respawnEndX: 0,
+        respawnEndY: 0,
+        respawnArc: 0,
+        respawnAlpha: 1,
+        fallCameraStartY: 0,
+        fallCameraTargetY: 0,
+        platformW: 0,
+        playerR: 0,
+        circleR: 0,
+        stepUp: 0,
+        lastPairCenterX: null,
+        player: {
+            x: 0, y: 0, r: 0, vy: 0, jumpT: 0,
+            jumpStartX: 0, jumpStartY: 0, jumpEndX: 0, jumpEndY: 0,
+            shadowScale: 1, squashX: 1, squashY: 1, rotation: 0
+        },
+        deco: {
+            stars: createTwinkleStars(40),
+            activeSpaceObject: null,
+            activeRocketFlybys: [],
+            activeMeteorFlybys: [],
+            nextRocketFlybyTick: Number.POSITIVE_INFINITY,
+            nextMeteorFlybyTick: Number.POSITIVE_INFINITY,
+            pendingSpaceQueue: [],
+            lastRandomSpaceType: null,
+            lastMeteorScore: -999
+        }
+    });
+
+    const applySelectedLetters = (updater) => {
+        setSelectedLetters((prev) => {
+            const rawNext = typeof updater === "function" ? updater(prev) : updater;
+            const next = orderLetters(rawNext);
+            stateRef.current.selectedLetters = next;
+            return next;
+        });
+    };
+    const toggleLetter = (letter) => {
+        applySelectedLetters((prev) => (
+            prev.includes(letter) ? prev.filter((item) => item !== letter) : [...prev, letter]
+        ));
+    };
+    const selectAllLetters = () => applySelectedLetters(PLAYABLE_LETTERS);
+    const deselectAllLetters = () => applySelectedLetters([]);
+    const selectTreatedLetters = () => applySelectedLetters(TREATED_LETTERS);
+
+    const speakLetter = useCallback((letter) => {
+        const normalizedLetter = String(letter || "").toLowerCase();
+        if (!normalizedLetter) return;
+        if (activeLetterAudioRef.current) {
+            activeLetterAudioRef.current.pause();
+            activeLetterAudioRef.current.currentTime = 0;
+            activeLetterAudioRef.current = null;
+        }
+        const variants = LETTER_AUDIO_SOURCES[normalizedLetter];
+        if (!variants || !variants.length) return;
+        if (!letterAudioRefs.current[normalizedLetter]) {
+            letterAudioRefs.current[normalizedLetter] = variants.map((sourceSet) => {
+                const audio = createAudioElementWithFallback(sourceSet);
+                audio.preload = "auto";
+                return audio;
+            });
+        }
+        const audioPool = letterAudioRefs.current[normalizedLetter];
+        const audio = audioPool[Math.floor(Math.random() * audioPool.length)];
+        activeLetterAudioRef.current = audio;
+        audio.currentTime = 0;
+        audio.play().catch((error) => {
+            console.warn(`Letter-audio voor ${normalizedLetter} kon niet afspelen.`, error);
+            activeLetterAudioRef.current = null;
+        });
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (activeLetterAudioRef.current) {
+                activeLetterAudioRef.current.pause();
+                activeLetterAudioRef.current.currentTime = 0;
+            }
+        };
+    }, []);
+
+    const playBackgroundMusic = useCallback(() => {
+        const audio = backgroundMusicRef.current;
+        if (!audio || !musicEnabled || document.hidden) return;
+        audio.muted = false;
+        audio.play().catch((error) => {
+            console.warn("Achtergrondmuziek kon niet afspelen.", error);
+        });
+    }, [musicEnabled]);
+    const pauseBackgroundMusic = useCallback(() => {
+        const audio = backgroundMusicRef.current;
+        if (!audio) return;
+        audio.pause();
+    }, []);
+    const toggleBackgroundMusic = useCallback(() => {
+        const next = !musicEnabled;
+        setMusicEnabled(next);
+        if (!next) {
+            musicWasPlayingBeforeHideRef.current = false;
+            pauseBackgroundMusic();
+            return;
+        }
+        const audio = backgroundMusicRef.current;
+        if (!audio || document.hidden) return;
+        audio.play().catch((error) => { console.warn("Achtergrondmuziek kon niet afspelen.", error); });
+    }, [musicEnabled, pauseBackgroundMusic]);
+
+    const handleRepeatQuestion = useCallback(() => {
+        if (!targetLetter) return;
+        repeatPressedRef.current = true;
+        setRepeatPressed(true);
+        speakLetter(targetLetter);
+        window.setTimeout(() => {
+            repeatPressedRef.current = false;
+            setRepeatPressed(false);
+        }, 180);
+    }, [targetLetter, speakLetter]);
+
+    useEffect(() => { repeatPressedRef.current = repeatPressed; }, [repeatPressed]);
+
+    useEffect(() => {
+        const audio = createAudioElementWithFallback(createAudioSourceSet(BACKGROUND_MUSIC_BASE));
+        audio.preload = "auto"; audio.loop = true; audio.volume = 0.32;
+        const handleCanPlay = () => setMusicReady(true);
+        const handleError = () => setMusicFailed(true);
+        audio.addEventListener("canplaythrough", handleCanPlay, { once: true });
+        audio.addEventListener("error", handleError, { once: true });
+        if (audio.readyState >= 4) setMusicReady(true);
+        backgroundMusicRef.current = audio;
+        return () => {
+            audio.pause(); audio.currentTime = 0;
+            audio.removeEventListener("canplaythrough", handleCanPlay);
+            audio.removeEventListener("error", handleError);
+            backgroundMusicRef.current = null;
+        };
+    }, []);
+
+    useEffect(() => {
+        const resumeMusicIfNeeded = () => {
+            const audio = backgroundMusicRef.current;
+            const s = stateRef.current;
+            if (!audio) return;
+            if (document.hidden) return;
+            if (!musicEnabled) return;
+            if (!s || s.gameState === "start") return;
+
+            audio.muted = false;
+            audio.play().catch((error) => {
+                console.warn("Achtergrondmuziek kon niet opnieuw starten.", error);
+            });
+        };
+
+        const handleVisibilityChange = () => {
+            const audio = backgroundMusicRef.current;
+            if (!audio) return;
+
+            if (document.hidden) {
+                musicWasPlayingBeforeHideRef.current = !audio.paused;
+                audio.pause();
+                return;
+            }
+
+            resumeMusicIfNeeded();
+        };
+
+        const handleBlur = () => {
+            const audio = backgroundMusicRef.current;
+            if (!audio) return;
+            musicWasPlayingBeforeHideRef.current = !audio.paused;
+            audio.pause();
+        };
+
+        const handleFocus = () => {
+            resumeMusicIfNeeded();
+        };
+
+        const handlePageShow = () => {
+            resumeMusicIfNeeded();
+        };
+
+        const handlePageHide = () => {
+            const audio = backgroundMusicRef.current;
+            if (!audio) return;
+            musicWasPlayingBeforeHideRef.current = !audio.paused;
+            audio.pause();
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("pagehide", handlePageHide);
+        window.addEventListener("pageshow", handlePageShow);
+        window.addEventListener("blur", handleBlur);
+        window.addEventListener("focus", handleFocus);
+
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            window.removeEventListener("pagehide", handlePageHide);
+            window.removeEventListener("pageshow", handlePageShow);
+            window.removeEventListener("blur", handleBlur);
+            window.removeEventListener("focus", handleFocus);
+        };
+    }, [musicEnabled, playBackgroundMusic]);
+
+    const updateSetting = (key, value) => {
+        let nextValue = Number(value);
+        if (Number.isNaN(nextValue)) return;
+        if (key === "astronautScale") nextValue = clamp(nextValue, 1.6, 4.6);
+        if (key === "jumpFrames") nextValue = Math.round(clamp(nextValue, 8, 28));
+        if (key === "idleAnimFps") nextValue = Math.round(clamp(nextValue, 3, 14));
+        if (key === "jumpAnimSpeed") nextValue = clamp(nextValue, 0.6, 1.6);
+
+        setSettings((prev) => {
+            const next = { ...prev, [key]: nextValue };
+            stateRef.current.settings = next;
+            return next;
+        });
+    };
+
+    const getFocusedCameraY = (platformY, h, offset) => platformY - (h - offset);
+    const getSharedCameraY = (lowerPlatformY, upperPlatformY, h, offset) => {
+        const s = stateRef.current;
+        const topMargin = h > s.width ? h * 0.15 : h * 0.2;
+        const desiredTop = upperPlatformY - topMargin;
+        const desiredBottom = lowerPlatformY - (h - offset);
+        return Math.min(desiredTop, desiredBottom);
+    };
+
+    const updateCameraTarget = () => {
+        const s = stateRef.current;
+        if (!s.currentPlatform) return;
+        if (s.gameState === "jumping" && s.chosenTarget) {
+            s.targetCameraY = getSharedCameraY(s.currentPlatform.y, s.chosenTarget.y, s.height, s.viewOffset);
+        } else if ((s.gameState === "waiting" || s.gameState === "landingPause") && s.nextPlatforms.length > 0) {
+            s.targetCameraY = getSharedCameraY(s.currentPlatform.y, s.nextPlatforms[0].y, s.height, s.viewOffset);
+        } else {
+            s.targetCameraY = getFocusedCameraY(s.currentPlatform.y, s.height, s.viewOffset);
+        }
+    };
+
+    const placePlayerOnPlatform = () => {
+        const s = stateRef.current;
+        if (!s.currentPlatform) return;
+        s.player.x = s.currentPlatform.x + s.currentPlatform.w / 2;
+        const contactY = getPlayerContactY(s.currentPlatform.y, s.circleR);
+        s.player.y = contactY - s.player.r;
+        s.player.squashX = 1; s.player.squashY = 1; s.player.shadowScale = 1; s.player.rotation = 0;
+    };
+
+    const createPlatform = (x, y, letter = "", correct = false) => ({
+        x, y, w: stateRef.current.platformW, h: PLATFORM_H, letter, correct,
+        falling: false, fallSpeed: 0, driftX: 0, rotation: 0, rotationSpeed: 0,
+        fallTime: 0, fallStartX: x, fallStartY: y, fallTiltDir: 0, alpha: 1, circleAlpha: letter ? 1 : 0
+    });
+
+    const randomLetter = (except = null, sourceLetters = null) => {
+        const activeLetters = sourceLetters && sourceLetters.length
+            ? sourceLetters
+            : (stateRef.current.selectedLetters.length >= 2 ? stateRef.current.selectedLetters : DEFAULT_SELECTED_LETTERS);
+        const pool = activeLetters.filter((letter) => letter !== except);
+        if (!pool.length) return except || activeLetters[0] || "a";
+        return pool[Math.floor(Math.random() * pool.length)];
+    };
+
+    const generateNextPairPositions = () => {
+        const s = stateRef.current;
+        const margin = s.width * 0.08;
+        const minGap = s.platformW * 1.12;
+        const maxGap = Math.max(minGap + 12, s.width * 0.36);
+        const minCenter = margin + s.platformW + minGap * 0.5;
+        const maxCenter = s.width - margin - s.platformW - minGap * 0.5;
+        let center;
+        if (s.lastPairCenterX == null) center = lerp(minCenter, maxCenter, Math.random());
+        else {
+            const offset = (Math.random() * 2 - 1) * s.width * 0.18;
+            center = clamp(s.lastPairCenterX + offset, minCenter, maxCenter);
+        }
+        const gap = lerp(minGap, maxGap, Math.random());
+        const leftX = clamp(center - gap / 2 - s.platformW / 2, margin, s.width - margin - s.platformW);
+        const rightX = clamp(center + gap / 2 - s.platformW / 2, margin, s.width - margin - s.platformW);
+        s.lastPairCenterX = (leftX + s.platformW / 2 + rightX + s.platformW / 2) / 2;
+        return { leftX, rightX };
+    };
+
+    const prepareNextRound = () => {
+        const s = stateRef.current;
+        if (!s.currentPlatform) return;
+        const activeLetters = s.selectedLetters.length >= 2 ? s.selectedLetters : DEFAULT_SELECTED_LETTERS;
+        const nextY = s.currentPlatform.y - s.stepUp;
+        const newTarget = activeLetters[Math.floor(Math.random() * activeLetters.length)];
+        s.targetLetter = newTarget;
+        setTargetLetter(newTarget);
+        const wrongLetter = randomLetter(newTarget, activeLetters);
+        const correctLeft = Math.random() < 0.5;
+        const { leftX, rightX } = generateNextPairPositions();
+        s.pendingNextPlatforms = [
+            createPlatform(leftX, nextY, correctLeft ? newTarget : wrongLetter, correctLeft),
+            createPlatform(rightX, nextY, correctLeft ? wrongLetter : newTarget, !correctLeft)
+        ];
+    };
+
+    const startNextRoundView = () => {
+        const s = stateRef.current;
+        if (!s.pendingNextPlatforms.length) return;
+        s.nextPlatforms = s.pendingNextPlatforms;
+        s.pendingNextPlatforms = [];
+        s.gameState = "waiting";
+        setGameState("waiting");
+        placePlayerOnPlatform();
+        updateCameraTarget();
+        speakLetter(s.targetLetter);
+    };
+
+    const startGame = () => {
+        const s = stateRef.current;
+        const activeLetters = s.selectedLetters.length >= 2 ? s.selectedLetters : selectedLetters;
+        if (!activeLetters || activeLetters.length < 2) return;
+
+        playBackgroundMusic();
+
+        s.score = 0; setScore(0);
+        s.settings = { ...stateRef.current.settings };
+        s.selectedLetters = [...activeLetters];
+        s.time.lastTs = 0; s.time.tick = 0; s.time.idleFrameClock = 0;
+        s.oldPlatforms = []; s.nextPlatforms = []; s.pendingNextPlatforms = [];
+        s.chosenTarget = null; s.fallingPlatform = null;
+        s.lastPairCenterX = s.width * 0.5;
+        s.deco.activeSpaceObject = null;
+        s.deco.activeRocketFlybys = [];
+        s.deco.activeMeteorFlybys = [];
+        s.deco.nextRocketFlybyTick = Number.POSITIVE_INFINITY;
+        s.deco.nextMeteorFlybyTick = Number.POSITIVE_INFINITY;
+        s.deco.pendingSpaceQueue = [];
+        s.deco.lastRandomSpaceType = null;
+        s.deco.lastMeteorScore = -999;
+        setTargetLetter("");
+
+        s.currentPlatform = createPlatform(s.width / 2 - s.platformW / 2, s.height - 120, "", false);
+        s.cameraY = getFocusedCameraY(s.currentPlatform.y, s.height, s.viewOffset);
+        s.targetCameraY = s.cameraY; s.baseCameraY = s.cameraY;
+        s.respawnT = 0; s.respawnStartX = 0; s.respawnStartY = 0; s.respawnEndX = 0; s.respawnEndY = 0; s.respawnArc = 0; s.respawnAlpha = 1;
+        s.fallCameraStartY = s.cameraY; s.fallCameraTargetY = s.cameraY;
+
+        placePlayerOnPlatform();
+        s.gameState = "start"; setGameState("start");
+        prepareNextRound();
+        startNextRoundView();
+    };
+
+    const queueRespawnFromBottom = () => {
+        const s = stateRef.current;
+        s.score = 0; setScore(0);
+        s.oldPlatforms = []; s.nextPlatforms = []; s.pendingNextPlatforms = [];
+        s.chosenTarget = null; s.fallingPlatform = null; s.targetLetter = ""; setTargetLetter("");
+        s.time.idleFrameClock = 0; s.lastPairCenterX = s.width * 0.5;
+        s.deco.activeSpaceObject = null; s.deco.activeRocketFlybys = []; s.deco.activeMeteorFlybys = [];
+        s.deco.nextRocketFlybyTick = Number.POSITIVE_INFINITY; s.deco.pendingSpaceQueue = []; s.deco.lastRandomSpaceType = null; s.deco.lastMeteorScore = -999;
+        s.fallCameraStartY = s.cameraY;
+        s.fallCameraTargetY = s.fallCameraStartY + Math.max(s.height * CAMERA_DROP_DISTANCE_FACTOR, s.stepUp * 0.92);
+        const platformX = s.width / 2 - s.platformW / 2;
+        const platformY = s.fallCameraTargetY + s.height - s.viewOffset;
+        s.currentPlatform = createPlatform(platformX, platformY, "", false);
+        s.baseCameraY = getFocusedCameraY(s.currentPlatform.y, s.height, s.viewOffset);
+        s.targetCameraY = s.baseCameraY;
+        s.respawnT = 0; s.respawnAlpha = 0;
+        s.respawnStartX = s.currentPlatform.x + s.currentPlatform.w / 2;
+        s.respawnEndX = s.respawnStartX;
+        s.respawnEndY = getPlayerContactY(s.currentPlatform.y, s.circleR) - s.player.r;
+        s.respawnStartY = s.baseCameraY + s.height + s.player.r * 3.8;
+        s.respawnArc = Math.max(s.player.r * 2.2, s.height * 0.09);
+        s.player.x = s.respawnStartX; s.player.y = s.respawnStartY;
+        s.player.shadowScale = 0.74; s.player.squashX = 1; s.player.squashY = 1; s.player.rotation = 0;
+        s.gameState = "cameraDrop"; setGameState("cameraDrop");
+    };
+
+    const choosePlatform = (platform) => {
+        const s = stateRef.current;
+        if (s.gameState !== "waiting" || !platform) return;
+        s.chosenTarget = platform;
+        const otherPlatform = s.nextPlatforms.find((p) => p !== s.chosenTarget);
+        if (otherPlatform) s.oldPlatforms.push(otherPlatform);
+        if (s.currentPlatform) s.oldPlatforms.push(s.currentPlatform);
+        s.player.jumpT = 0;
+        s.player.jumpStartX = s.player.x; s.player.jumpStartY = s.player.y;
+        s.player.jumpEndX = s.chosenTarget.x + s.chosenTarget.w / 2;
+        s.player.jumpEndY = getPlayerContactY(s.chosenTarget.y, s.circleR) - s.player.r;
+        s.player.shadowScale = 1; s.player.rotation = 0;
+        s.gameState = "jumping"; setGameState("jumping"); updateCameraTarget();
+    };
+
+    const updatePlayerIdlePose = () => {
+        const s = stateRef.current;
+        if (!s.currentPlatform) return;
+        s.player.x = s.currentPlatform.x + s.currentPlatform.w / 2;
+        const contactY = getPlayerContactY(s.currentPlatform.y, s.circleR);
+        s.player.y = contactY - s.player.r;
+        s.player.squashX = 1; s.player.squashY = 1; s.player.shadowScale = 1; s.player.rotation = 0;
+    };
+
+    useEffect(() => { stateRef.current.settings = settings; }, [settings]);
+    useEffect(() => { stateRef.current.selectedLetters = selectedLetters; }, [selectedLetters]);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d", { alpha: true });
+        let animationFrameId;
+
+        const hexToRgb = (hex) => {
+            const clean = hex.replace("#", "");
+            return {
+                r: parseInt(clean.slice(0, 2), 16),
+                g: parseInt(clean.slice(2, 4), 16),
+                b: parseInt(clean.slice(4, 6), 16)
+            };
+        };
+        const colorLerp = (hex1, hex2, t) => {
+            const c1 = hexToRgb(hex1), c2 = hexToRgb(hex2);
+            const r = Math.round(lerp(c1.r, c2.r, t));
+            const g = Math.round(lerp(c1.g, c2.g, t));
+            const b = Math.round(lerp(c1.b, c2.b, t));
+            return `rgb(${r}, ${g}, ${b})`;
+        };
+        const roundRect = (x, y, w, h, r) => {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+        };
+
+        const handleResize = () => {
+            const w = window.innerWidth, h = window.innerHeight, dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+            canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+            canvas.style.width = `${w}px`; canvas.style.height = `${h}px`;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+
+            const s = stateRef.current;
+            s.width = w; s.height = h; s.dpr = dpr;
+            const isPortrait = h > w;
+            s.platformW = Math.max(140, Math.min(220, isPortrait ? w * 0.45 : w * 0.25));
+            s.playerR = Math.max(24, Math.min(40, h * PLAYER_R_RATIO));
+            s.player.r = s.playerR;
+            s.circleR = Math.max(30, Math.min(45, h * CIRCLE_R_RATIO));
+            s.stepUp = Math.max(280, Math.min(400, h * 0.4));
+            s.viewOffset = isPortrait ? h * 0.15 : h * 0.2;
+            s.jumpArc = Math.max(h * DEFAULT_JUMP_ARC_RATIO, s.stepUp * 0.78);
+            updateCameraTarget();
+        };
+
+        const getImageFromAsset = (asset) => asset ? (asset.canvas || asset.img || null) : null;
+
+        const drawFloatingAsset = (asset, alpha, x, y, size, rotation = 0, mirrorX = false, options = {}) => {
+            if (!asset || alpha <= 0.01 || size <= 0) return;
+            const img = getImageFromAsset(asset);
+            if (!img || !img.width || !img.height) return;
+            const scale = size / Math.max(img.width, img.height);
+            const drawW = img.width * scale, drawH = img.height * scale;
+            const { rocketFlame = false, flameFlicker = 0 } = options;
+
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.translate(x, y);
+            if (mirrorX) ctx.scale(-1, 1);
+            if (rotation) ctx.rotate(rotation);
+
+            if (rocketFlame) {
+                const localScale = size / ROCKET_FLAME_BASE_SIZE;
+                const flicker = 0.88 + (Math.sin(flameFlicker * 0.23) * 0.08) + (Math.sin(flameFlicker * 0.61 + 1.4) * 0.06);
+                const flameLength = ROCKET_FLAME_LENGTH * localScale * flicker;
+                const flameWidth = ROCKET_FLAME_WIDTH * localScale;
+                const smokeX = ROCKET_SMOKE_X * localScale;
+                const smokeY = ROCKET_SMOKE_Y * localScale;
+                const flameX = ROCKET_FLAME_X * localScale;
+                const flameY = ROCKET_FLAME_Y * localScale;
+
+                ctx.save();
+                ctx.translate(smokeX, smokeY);
+                ctx.rotate(ROCKET_FLAME_ANGLE);
+                for (let i = 0; i < 5; i += 1) {
+                    const t = ((flameFlicker * 0.014) + i / 5) % 1;
+                    const puffX = -flameLength * (0.25 + t * 1.10);
+                    const puffY = Math.sin(flameFlicker * 0.13 + i * 1.7) * flameWidth * 0.18;
+                    ctx.globalAlpha = alpha * 0.24 * (1 - t);
+                    ctx.fillStyle = '#dbe2ea';
+                    ctx.beginPath();
+                    ctx.ellipse(
+                        puffX, puffY,
+                        flameWidth * (0.18 + t * 0.20),
+                        flameWidth * (0.14 + t * 0.18),
+                        0, 0, Math.PI * 2
+                    );
+                    ctx.fill();
+                }
+                ctx.restore();
+
+                ctx.save();
+                ctx.translate(flameX, flameY);
+                ctx.rotate(ROCKET_FLAME_ANGLE);
+
+                const outerGrad = ctx.createLinearGradient(-flameLength, 0, 8 * localScale, 0);
+                outerGrad.addColorStop(0, 'rgba(255, 80, 0, 0)');
+                outerGrad.addColorStop(0.25, 'rgba(255, 100, 0, 0.45)');
+                outerGrad.addColorStop(0.60, 'rgba(255, 172, 24, 0.86)');
+                outerGrad.addColorStop(1, 'rgba(255, 235, 160, 0.18)');
+                ctx.fillStyle = outerGrad;
+                ctx.beginPath();
+                ctx.moveTo(8 * localScale, 0);
+                ctx.quadraticCurveTo(-flameLength * 0.35, -flameWidth, -flameLength, 0);
+                ctx.quadraticCurveTo(-flameLength * 0.35, flameWidth, 8 * localScale, 0);
+                ctx.closePath();
+                ctx.fill();
+
+                const innerLength = flameLength * 0.56;
+                const innerGrad = ctx.createLinearGradient(-innerLength, 0, 6 * localScale, 0);
+                innerGrad.addColorStop(0, 'rgba(255, 150, 0, 0)');
+                innerGrad.addColorStop(0.45, 'rgba(255, 235, 100, 0.95)');
+                innerGrad.addColorStop(1, 'rgba(255, 255, 235, 0.6)');
+                ctx.fillStyle = innerGrad;
+                ctx.beginPath();
+                ctx.moveTo(6 * localScale, 0);
+                ctx.quadraticCurveTo(-innerLength * 0.35, -flameWidth * 0.45, -innerLength, 0);
+                ctx.quadraticCurveTo(-innerLength * 0.35, flameWidth * 0.45, 6 * localScale, 0);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+            ctx.restore();
+        };
+
+        const drawDirectionalSmokeTrail = (x, y, size, dx, dy, alpha, tick, options = {}) => {
+            const lengthMultiplier = options.lengthMultiplier || 1;
+            const puffCount = options.puffCount || METEOR_SMOKE_PUFFS;
+            const magnitude = Math.hypot(dx, dy) || 1;
+            const dirX = dx / magnitude, dirY = dy / magnitude;
+            const normalX = -dirY, normalY = dirX;
+            const baseLength = size * METEOR_SMOKE_LENGTH * lengthMultiplier;
+            const baseRadius = Math.max(8, size * 0.10);
+
+            ctx.save();
+            ctx.globalCompositeOperation = "source-over";
+
+            for (let i = 0; i < puffCount; i += 1) {
+                const t = ((tick * 0.010) + i / puffCount) % 1;
+                const distance = baseLength * (0.18 + t * 1.05);
+                const wobble = Math.sin(tick * 0.09 + i * 1.63) * baseRadius * (0.28 + t * 0.45);
+                const puffX = x - dirX * distance + normalX * wobble;
+                const puffY = y - dirY * distance + normalY * wobble;
+                const radiusX = baseRadius * (0.44 + t * 1.10);
+                const radiusY = baseRadius * (0.30 + t * 0.78);
+                const puffAlpha = alpha * 0.30 * (1 - t) * (0.72 + Math.sin(tick * 0.05 + i) * 0.12);
+                if (puffAlpha <= 0.01) continue;
+                ctx.globalAlpha = puffAlpha;
+                ctx.fillStyle = "#d7d2c8";
+                ctx.beginPath();
+                ctx.ellipse(puffX, puffY, radiusX, radiusY, Math.atan2(dirY, dirX), 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            const grad = ctx.createLinearGradient(x - dirX * baseLength, y - dirY * baseLength, x, y);
+            grad.addColorStop(0, "rgba(210,205,195,0)");
+            grad.addColorStop(0.42, `rgba(220,215,205,${alpha * 0.14})`);
+            grad.addColorStop(1, `rgba(238,232,220,${alpha * 0.22})`);
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = Math.max(8, size * 0.085);
+            ctx.lineCap = "round";
+            ctx.beginPath();
+            ctx.moveTo(x - dirX * baseLength, y - dirY * baseLength);
+            ctx.quadraticCurveTo(
+                x - dirX * baseLength * 0.52 + normalX * baseRadius * 0.7,
+                y - dirY * baseLength * 0.52 + normalY * baseRadius * 0.7,
+                x - dirX * size * 0.20,
+                y - dirY * size * 0.20
+            );
+            ctx.stroke();
+            ctx.restore();
+        };
+
+        const getLayerMetrics = (asset, s, climb, speed, options = {}) => {
+            const { anchor = "bottom", heightRatio = 0.4, widthBleed = 0, baseOffset = 0, extraScale = 1 } = options;
+            const img = getImageFromAsset(asset);
+            if (!img || !img.width || !img.height) return null;
+
+            const scale = Math.max(
+                (s.width * (1 + widthBleed)) / img.width,
+                (s.height * heightRatio) / img.height
+            ) * extraScale;
+
+            const drawW = img.width * scale;
+            const drawH = img.height * scale;
+            const x = (s.width - drawW) * 0.5;
+            const anchorY = anchor === "top" ? baseOffset : s.height - drawH + baseOffset;
+            const y = anchorY + climb * speed;
+            return { img, x, y, drawW, drawH };
+        };
+
+        const getLayerFade = (climb, fadeStart, fadeEnd) => {
+            if (fadeEnd <= fadeStart) return 1;
+            return 1 - smoothStep(fadeStart, fadeEnd, climb);
+        };
+
+        const drawSky = (s, climb) => {
+            const toSpace = smoothStep(1500, 5600, climb);
+            const topDarkness = smoothStep(1900, 4700, climb);
+            const midDarkness = smoothStep(2300, 5000, climb);
+            const bottomDarkness = smoothStep(3000, 5600, climb);
+
+            const topColor = colorLerp("#5a92e8", "#000000", topDarkness);
+            const midColor = colorLerp("#7ec8ff", "#02040a", midDarkness);
+            const bottomColor = colorLerp("#c8efff", "#000000", bottomDarkness);
+
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, s.height);
+            skyGrad.addColorStop(0, topColor);
+            skyGrad.addColorStop(0.52, midColor);
+            skyGrad.addColorStop(1, bottomColor);
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, s.width, s.height);
+
+            const horizonGlowAlpha = (1 - toSpace) * 0.24;
+            if (horizonGlowAlpha > 0.01) {
+                const glow = ctx.createRadialGradient(
+                    s.width * 0.5, s.height * 1.02, 12,
+                    s.width * 0.5, s.height * 1.02, s.height * 0.78
+                );
+                glow.addColorStop(0, `rgba(225, 246, 255, ${horizonGlowAlpha})`);
+                glow.addColorStop(0.58, `rgba(142, 214, 255, ${horizonGlowAlpha * 0.26})`);
+                glow.addColorStop(1, "rgba(255,255,255,0)");
+                ctx.fillStyle = glow;
+                ctx.fillRect(0, 0, s.width, s.height);
+            }
+        };
+
+        const drawMountainsLayer = (s, climb) => {
+            const metrics = getLayerMetrics(assetsRef.current.mountains, s, climb, MOUNTAINS_LAYER_SPEED, {
+                anchor: "bottom", heightRatio: 0.42, widthBleed: 0.02, baseOffset: -s.height * 0.18
+            });
+            if (!metrics) return;
+            const alpha = getLayerFade(climb, 2500, 4700);
+            if (alpha <= 0.01) return;
+            ctx.save(); ctx.globalAlpha = alpha;
+            ctx.drawImage(metrics.img, metrics.x, metrics.y, metrics.drawW, metrics.drawH);
+            ctx.restore();
+        };
+
+        const drawCloudLayer = (s, climb) => {
+            const metrics = getLayerMetrics(assetsRef.current.clouds, s, climb, CLOUDS_LAYER_SPEED, {
+                anchor: "top", heightRatio: 0.84, widthBleed: 0.02, baseOffset: -s.height * 0.28
+            });
+            if (!metrics) return;
+            const alpha = 0.92 * getLayerFade(climb, 1900, 4000);
+            if (alpha <= 0.01) return;
+            ctx.save(); ctx.globalAlpha = alpha;
+            ctx.drawImage(metrics.img, metrics.x, metrics.y, metrics.drawW, metrics.drawH);
+            ctx.restore();
+        };
+
+        const drawGroundLayer = (s, climb) => {
+            const metrics = getLayerMetrics(assetsRef.current.ground, s, climb, GROUND_LAYER_SPEED, {
+                anchor: "bottom", heightRatio: 0.72, widthBleed: 0.01, baseOffset: s.height * 0.08
+            });
+            if (!metrics) return;
+            const alpha = getLayerFade(climb, 1350, 3300);
+            if (alpha <= 0.01) return;
+            ctx.save(); ctx.globalAlpha = alpha;
+            ctx.drawImage(metrics.img, metrics.x, metrics.y, metrics.drawW, metrics.drawH);
+            ctx.restore();
+        };
+
+        const drawStars = (s, climb) => {
+            const visible = clamp((climb - STAR_FIELD_START) / 500, 0, 1);
+            if (visible <= 0.01) return;
+            s.deco.stars.forEach((star, i) => {
+                const drift = climb * star.depth;
+                const x = star.x * s.width + Math.sin(s.time.tick * 0.0025 + i * 0.7) * star.wobble;
+                const y = ((star.y * s.height) + drift) % (s.height + 120) - 60;
+                const pulse = 0.55 + ((Math.sin(s.time.tick * star.twinkle + star.phase) + 1) * 0.5) * 0.9;
+                const alpha = visible * pulse * star.alpha;
+                const r = star.size * (0.9 + pulse * 0.22);
+
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                const glow = ctx.createRadialGradient(x, y, 0, x, y, r * 3.2);
+                glow.addColorStop(0, "rgba(255,255,255,0.95)");
+                glow.addColorStop(0.35, "rgba(210,230,255,0.45)");
+                glow.addColorStop(1, "rgba(255,255,255,0)");
+                ctx.fillStyle = glow;
+                ctx.beginPath(); ctx.arc(x, y, r * 3.2, 0, Math.PI * 2); ctx.fill();
+
+                ctx.fillStyle = "#ffffff";
+                ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+
+                if (star.sparkle) {
+                    ctx.strokeStyle = `rgba(255,255,255,${Math.min(1, alpha * 0.9)})`;
+                    ctx.lineWidth = Math.max(0.7, r * 0.35);
+                    ctx.beginPath();
+                    ctx.moveTo(x - r * 2.2, y); ctx.lineTo(x + r * 2.2, y);
+                    ctx.moveTo(x, y - r * 2.2); ctx.lineTo(x, y + r * 2.2);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            });
+        };
+
+        const getSpaceAsset = (type) => {
+            if (type === "rocket") return assetsRef.current.rocket;
+            if (type === "ufo") return assetsRef.current.ufo;
+            if (type === "satellite") return assetsRef.current.satellite;
+            if (type === "meteor") return assetsRef.current.meteor;
+            if (typeof type === "string" && type.startsWith("planet")) return assetsRef.current[type];
+            return null;
+        };
+        const getCurrentClimb = (s) => Math.max(0, s.baseCameraY - s.cameraY);
+        const chooseRandomSpaceType = (lastType = null) => {
+            const pool = RANDOM_SPACE_TYPES.filter((type) => type !== lastType);
+            const source = pool.length ? pool : RANDOM_SPACE_TYPES;
+            return source[Math.floor(Math.random() * source.length)] || RANDOM_SPACE_TYPES[0];
+        };
+        const getNextSpaceTriggerScore = (score) => {
+            if (score < MOON_SCORE) return MOON_SCORE;
+            if (score < SATELLITE_SCORE) return SATELLITE_SCORE;
+            if (score < SPACE_RANDOM_START_SCORE) return SPACE_RANDOM_START_SCORE;
+            return score + SPACE_RANDOM_INTERVAL;
+        };
+        const getQuadraticDropScale = (size) => {
+            const normalized = clamp((size - 150) / 150, 0, 1);
+            return 0.28 + Math.pow(normalized, 2) * 0.9;
+        };
+
+        const createSpaceObjectInstance = (type, startTick = 0, spawnClimb = 0, spawnScore = 0) => {
+            const nextTriggerScore = getNextSpaceTriggerScore(spawnScore);
+            const panDirection = Math.random() < 0.5 ? -1 : 1;
+            const base = {
+                type, startTick, spawnClimb, spawnScore, endScore: nextTriggerScore,
+                size: 220, depth: "back", mirrorX: false, rotation: 0, rotationDrift: 0,
+                phase: Math.random() * Math.PI * 2, alignToPath: false, angleOffset: 0,
+                mode: "drift", entryXOffset: 0, entryYOffset: -0.02, entryDuration: 96,
+                driftAmpX: 8, driftAmpY: 6, driftSpeedX: 0.0036, driftSpeedY: 0.0028,
+                levelDropPx: 16, scaleLevelDropBySize: false, flybyDuration: 250,
+                panXPerTick: 0, panYPerTick: 0, bobAmpY: 6, bobSpeedY: 0.0024,
+                bobAmpX: 3, bobSpeedX: 0.0017, fadeFloor: 0.28
+            };
+
+            const planetVariants = {
+                planet01: { size: 228, x: 0.76, y: 0.18, entryXOffset: 0.028, entryYOffset: -0.018, entryDuration: 104, panXPerTick: -0.030 * panDirection, panYPerTick: 0.020, bobAmpY: 7, bobSpeedY: 0.0015, bobAmpX: 3, bobSpeedX: 0.0011, rotation: 0.02, rotationDrift: 0.007, levelDropPx: 30, scaleLevelDropBySize: true },
+                planet02: { size: 218, x: 0.28, y: 0.24, entryXOffset: -0.026, entryYOffset: -0.018, entryDuration: 106, panXPerTick: 0.028 * panDirection, panYPerTick: 0.018, bobAmpY: 5, bobSpeedY: 0.0016, bobAmpX: 2, bobSpeedX: 0.0011, rotation: -0.03, rotationDrift: 0.007, levelDropPx: 28, scaleLevelDropBySize: true },
+                planet03: { size: 280, x: 0.68, y: 0.21, entryXOffset: 0.024, entryYOffset: -0.018, entryDuration: 110, panXPerTick: -0.026 * panDirection, panYPerTick: 0.020, bobAmpY: 7, bobSpeedY: 0.0014, bobAmpX: 3, bobSpeedX: 0.0010, rotation: -0.05, rotationDrift: 0.008, levelDropPx: 38, scaleLevelDropBySize: true },
+                planet04: { size: 246, x: 0.30, y: 0.17, entryXOffset: -0.024, entryYOffset: -0.016, entryDuration: 102, panXPerTick: 0.029 * panDirection, panYPerTick: 0.018, bobAmpY: 6, bobSpeedY: 0.0015, bobAmpX: 3, bobSpeedX: 0.0011, rotation: 0.04, rotationDrift: 0.007, levelDropPx: 33, scaleLevelDropBySize: true },
+                planet05: { size: 176, x: 0.73, y: 0.25, entryXOffset: 0.022, entryYOffset: -0.014, entryDuration: 104, panXPerTick: -0.031 * panDirection, panYPerTick: 0.017, bobAmpY: 5, bobSpeedY: 0.0016, bobAmpX: 2, bobSpeedX: 0.0012, rotation: 0.03, rotationDrift: 0.006, levelDropPx: 22, scaleLevelDropBySize: true },
+                planet06: { size: 210, x: 0.34, y: 0.18, entryXOffset: -0.024, entryYOffset: -0.014, entryDuration: 100, panXPerTick: 0.030 * panDirection, panYPerTick: 0.018, bobAmpY: 6, bobSpeedY: 0.0016, bobAmpX: 3, bobSpeedX: 0.0011, rotation: 0.04, rotationDrift: 0.007, levelDropPx: 26, scaleLevelDropBySize: true },
+                planet07: { size: 172, x: 0.78, y: 0.16, entryXOffset: 0.020, entryYOffset: -0.014, entryDuration: 114, panXPerTick: -0.022 * panDirection, panYPerTick: 0.014, bobAmpY: 4, bobSpeedY: 0.0014, bobAmpX: 2, bobSpeedX: 0.0010, rotation: 0.015, rotationDrift: 0.005, levelDropPx: 18, scaleLevelDropBySize: true }
+            };
+
+            if (planetVariants[type]) {
+                const variant = planetVariants[type];
+                const sizeMultiplier = 0.84 + Math.random() * 0.34;
+                return { ...base, ...variant, size: Math.round(variant.size * sizeMultiplier) };
+            }
+
+            if (type === "satellite") {
+                return {
+                    ...base, size: 198, x: 0.72, y: 0.24, entryXOffset: 0.035, entryYOffset: -0.018, entryDuration: 100,
+                    panXPerTick: -0.028, panYPerTick: 0.016, bobAmpY: 4, bobSpeedY: 0.0019, bobAmpX: 2, bobSpeedX: 0.0013,
+                    rotation: 0.12, rotationDrift: 0.012, levelDropPx: 22, fadeFloor: 0.34
+                };
+            }
+
+            if (type === "rocket") {
+                const flyRight = Math.random() < 0.5;
+                const routeMode = Math.random();
+                let fromX, toX, fromY, toY;
+
+                if (routeMode < 0.35) {
+                    // schuin omhoog, vrij steil
+                    fromX = flyRight ? -0.10 : 1.10;
+                    toX = flyRight ? 0.72 : 0.28;
+                    fromY = 0.82 + Math.random() * 0.12;
+                    toY = 0.04 + Math.random() * 0.16;
+                } else if (routeMode < 0.60) {
+                    // bijna recht omhoog
+                    const laneX = flyRight
+                        ? (0.18 + Math.random() * 0.18)
+                        : (0.64 + Math.random() * 0.18);
+                    fromX = laneX;
+                    toX = clamp(laneX + (-0.05 + Math.random() * 0.10), 0.10, 0.90);
+                    fromY = 0.90 + Math.random() * 0.06;
+                    toY = 0.02 + Math.random() * 0.14;
+                } else {
+                    // bestaande diagonale flyby, iets vaker omhoog
+                    fromX = flyRight ? -0.12 : 1.12;
+                    toX = flyRight ? 1.08 : -0.08;
+                    fromY = 0.24 + Math.random() * 0.56;
+                    toY = clamp(fromY - (0.12 + Math.random() * 0.34), 0.06, 0.72);
+                }
+
+                return {
+                    ...base, mode: "flyby", depth: "front", size: 174 + Math.round(Math.random() * 38),
+                    fromX, fromY, toX, toY, alignToPath: true, angleOffset: Math.PI / 2,
+                    mirrorX: false, flybyDuration: 200 + Math.round(Math.random() * 80),
+                    levelDropPx: 0, fadeFloor: 1
+                };
+            }
+
+            if (type === "meteor") {
+                const flyRight = Math.random() < 0.5;
+                const fromX = flyRight ? -0.10 : 1.10;
+                const toX = flyRight ? 1.08 : -0.08;
+                const fromY = 0.06 + Math.random() * 0.28;
+                const toY = clamp(fromY + 0.44 + Math.random() * 0.32, 0.54, 1.04);
+                return {
+                    ...base, mode: "flyby", depth: "front", size: 184 + Math.round(Math.random() * 34),
+                    fromX, fromY, toX, toY, alignToPath: true,
+                    angleOffset: flyRight ? -Math.PI * 0.75 : Math.PI * 0.75,
+                    mirrorX: !flyRight, flybyDuration: 170 + Math.round(Math.random() * 40),
+                    levelDropPx: 0, fadeFloor: 1
+                };
+            }
+
+            if (type === "ufo") {
+                return {
+                    ...base, depth: "front", size: 188, x: 0.34, y: 0.22, entryXOffset: -0.035, entryYOffset: -0.016, entryDuration: 98,
+                    panXPerTick: 0.036, panYPerTick: 0.018, bobAmpY: 5, bobSpeedY: 0.0021, bobAmpX: 3, bobSpeedX: 0.0016,
+                    rotation: 0.03, rotationDrift: 0.012, levelDropPx: 20, fadeFloor: 0.34
+                };
+            }
+            return { ...base, x: 0.5, y: 0.22 };
+        };
+
+        const activateNextSpaceObject = (s, type = null) => {
+            const nextType = type || null;
+            if (!nextType) { s.deco.activeSpaceObject = null; return; }
+            s.deco.activeSpaceObject = createSpaceObjectInstance(nextType, s.time.tick, getCurrentClimb(s), s.score);
+        };
+
+        const triggerSpaceAssetForScore = (s) => {
+            const fixedType = FIXED_SPACE_SCORE_EVENTS[s.score];
+            let nextType = fixedType || null;
+            if (!nextType && s.score >= SPACE_RANDOM_START_SCORE && (s.score - SPACE_RANDOM_START_SCORE) % SPACE_RANDOM_INTERVAL === 0) {
+                nextType = chooseRandomSpaceType(s.deco.lastRandomSpaceType);
+            }
+            if (!nextType) return;
+            if (RANDOM_SPACE_TYPES.includes(nextType)) s.deco.lastRandomSpaceType = nextType;
+            activateNextSpaceObject(s, nextType);
+        };
+
+        const scheduleNextRocketFlyby = (s, firstAfterUnlock = false, delayTicks = null) => {
+            if (Number.isFinite(delayTicks)) { s.deco.nextRocketFlybyTick = s.time.tick + Math.max(1, delayTicks); return; }
+            const minTicks = firstAfterUnlock ? ROCKET_FLYBY_FIRST_TICK_MIN : ROCKET_FLYBY_TICK_MIN;
+            const maxTicks = firstAfterUnlock ? ROCKET_FLYBY_FIRST_TICK_MAX : ROCKET_FLYBY_TICK_MAX;
+            s.deco.nextRocketFlybyTick = s.time.tick + minTicks + Math.random() * Math.max(1, maxTicks - minTicks);
+        };
+
+        const scheduleNextMeteorFlyby = (s, firstAfterUnlock = false, delayTicks = null) => {
+            if (Number.isFinite(delayTicks)) { s.deco.nextMeteorFlybyTick = s.time.tick + Math.max(1, delayTicks); return; }
+            const minTicks = firstAfterUnlock ? METEOR_FLYBY_FIRST_TICK_MIN : METEOR_FLYBY_TICK_MIN;
+            const maxTicks = firstAfterUnlock ? METEOR_FLYBY_FIRST_TICK_MAX : METEOR_FLYBY_TICK_MAX;
+            s.deco.nextMeteorFlybyTick = s.time.tick + minTicks + Math.random() * Math.max(1, maxTicks - minTicks);
+        };
+
+        const pruneExpiredRocketFlybys = (s) => {
+            const activeFlybys = Array.isArray(s.deco.activeRocketFlybys) ? s.deco.activeRocketFlybys : [];
+            s.deco.activeRocketFlybys = activeFlybys.filter((obj) => {
+                if (!obj || obj.type !== "rocket") return false;
+                const elapsedTicks = Math.max(0, s.time.tick - (obj.startTick || 0));
+                const maxFlightTicks = Math.max(1, obj.flybyDuration || 240) + 36;
+                return elapsedTicks < maxFlightTicks;
+            });
+        };
+
+        const pruneExpiredMeteorFlybys = (s) => {
+            const activeFlybys = Array.isArray(s.deco.activeMeteorFlybys) ? s.deco.activeMeteorFlybys : [];
+            s.deco.activeMeteorFlybys = activeFlybys.filter((obj) => {
+                if (!obj || obj.type !== "meteor") return false;
+                const elapsedTicks = Math.max(0, s.time.tick - (obj.startTick || 0));
+                const maxFlightTicks = Math.max(1, obj.flybyDuration || 220) + 36;
+                return elapsedTicks < maxFlightTicks;
+            });
+        };
+
+        const spawnRocketFlyby = (s) => {
+            pruneExpiredRocketFlybys(s); pruneExpiredMeteorFlybys(s);
+            const activeFlybys = Array.isArray(s.deco.activeRocketFlybys) ? s.deco.activeRocketFlybys : [];
+            const hasRocketInFlight = activeFlybys.some((obj) => obj && obj.type === "rocket");
+            const hasMeteorInFlight = Array.isArray(s.deco.activeMeteorFlybys) && s.deco.activeMeteorFlybys.some((obj) => obj && obj.type === "meteor");
+            if (hasRocketInFlight) return;
+            if (hasMeteorInFlight) { scheduleNextRocketFlyby(s, false, 120); return; }
+            s.deco.activeRocketFlybys = [...activeFlybys, createSpaceObjectInstance("rocket", s.time.tick, getCurrentClimb(s), s.score)];
+            scheduleNextRocketFlyby(s, false);
+        };
+
+        const spawnMeteorFlyby = (s) => {
+            pruneExpiredMeteorFlybys(s); pruneExpiredRocketFlybys(s);
+            const activeFlybys = Array.isArray(s.deco.activeMeteorFlybys) ? s.deco.activeMeteorFlybys : [];
+            const hasMeteorInFlight = activeFlybys.some((obj) => obj && obj.type === "meteor");
+            const hasRocketInFlight = Array.isArray(s.deco.activeRocketFlybys) && s.deco.activeRocketFlybys.some((obj) => obj && obj.type === "rocket");
+            if (hasMeteorInFlight) return;
+            if (hasRocketInFlight) { scheduleNextMeteorFlyby(s, false, 120); return; }
+            s.deco.activeMeteorFlybys = [...activeFlybys, createSpaceObjectInstance("meteor", s.time.tick, getCurrentClimb(s), s.score)];
+            s.deco.lastMeteorScore = s.score;
+            scheduleNextMeteorFlyby(s, false);
+        };
+
+        const triggerRocketFlybyForScore = (s) => {
+            if (s.score < ROCKET_FLYBY_START_SCORE) return;
+            if (!Number.isFinite(s.deco.nextRocketFlybyTick)) scheduleNextRocketFlyby(s, true);
+        };
+        const updateTimedRocketFlybys = (s) => {
+            if (s.score < ROCKET_FLYBY_START_SCORE) return;
+            pruneExpiredRocketFlybys(s);
+            if (!Number.isFinite(s.deco.nextRocketFlybyTick)) scheduleNextRocketFlyby(s, true);
+            if (s.time.tick >= (s.deco.nextRocketFlybyTick ?? Number.POSITIVE_INFINITY)) spawnRocketFlyby(s);
+        };
+
+        const triggerMeteorFlybyForScore = (s) => {
+            if (s.score < METEOR_FLYBY_START_SCORE) return;
+            if (s.score % 30 !== 0) return;
+            if (s.deco.lastMeteorScore === s.score) return;
+            if (!Number.isFinite(s.deco.nextMeteorFlybyTick)) {
+                scheduleNextMeteorFlyby(s, true);
+            }
+        };
+        const updateTimedMeteorFlybys = (s) => {
+            if (s.score < METEOR_FLYBY_START_SCORE) return;
+            pruneExpiredMeteorFlybys(s);
+            if (!Number.isFinite(s.deco.nextMeteorFlybyTick)) return;
+            if (s.time.tick >= (s.deco.nextMeteorFlybyTick ?? Number.POSITIVE_INFINITY)) {
+                spawnMeteorFlyby(s);
+            }
+        };
+
+        const getSpaceObjectWorldState = (obj, s) => {
+            if (!obj) return null;
+            const elapsedTicks = Math.max(0, s.time.tick - (obj.startTick || 0));
+            const scoreDelta = Math.max(0, s.score - (obj.spawnScore || 0));
+            const scoreWindow = Math.max(1, (obj.endScore || ((obj.spawnScore || 0) + 1)) - (obj.spawnScore || 0));
+            const fadeProgress = clamp(scoreDelta / scoreWindow, 0, 1);
+            const entryDuration = Math.max(18, obj.entryDuration || 42);
+            const entranceProgress = smoothStep(0, 1, clamp(elapsedTicks / entryDuration, 0, 1));
+            const fadeFloor = obj.fadeFloor ?? 0.06;
+            const fadeDown = lerp(1, fadeFloor, smoothStep(0, 1, fadeProgress));
+            const levelDropBase = obj.levelDropPx || 0;
+            const levelDropScale = obj.scaleLevelDropBySize ? getQuadraticDropScale(obj.size || 220) : 1;
+            const verticalFollow = smoothStep(0, 1, fadeProgress) * levelDropBase * levelDropScale;
+
+            let x = 0, y = 0;
+            let rotation = obj.rotation || 0;
+            let visibility = smoothStep(0, 1, entranceProgress) * fadeDown;
+            let progress = fadeProgress;
+            let outOfView = false;
+
+            if (obj.mode === "flyby") {
+                const flightProgress = clamp(elapsedTicks / Math.max(1, obj.flybyDuration || 240), 0, 1);
+                const fromX = obj.fromX ?? -0.1;
+                const fromY = obj.fromY ?? 0.5;
+                const toX = obj.toX ?? 1.1;
+                const toY = obj.toY ?? 0.5;
+
+                x = s.width * lerp(fromX, toX, flightProgress);
+                y = s.height * lerp(fromY, toY, flightProgress) + verticalFollow;
+                progress = flightProgress;
+                visibility = smoothStep(0, 1, clamp(elapsedTicks / 16, 0, 1));
+
+                if (obj.alignToPath) {
+                    const dx = s.width * (toX - fromX);
+                    const dy = s.height * (toY - fromY);
+                    rotation = Math.atan2(dy, dx) + (obj.angleOffset || 0);
+                }
+
+                const margin = Math.max(s.width, s.height, obj.size || 220) * 0.35 + (obj.size || 220);
+                outOfView = flightProgress >= 1 || (
+                    x < -margin ||
+                    x > s.width + margin ||
+                    y < -margin ||
+                    y > s.height + margin
+                );
+            } else {
+                const phase = obj.phase || 0;
+                const baseX = s.width * ((obj.x ?? 0.5) + (1 - entranceProgress) * (obj.entryXOffset || 0));
+                const baseY = s.height * ((obj.y ?? 0.22) + (1 - entranceProgress) * (obj.entryYOffset || 0));
+                const panX = elapsedTicks * (obj.panXPerTick || 0);
+                const panY = elapsedTicks * (obj.panYPerTick || 0);
+                const bobAmpY = obj.bobAmpY || 0;
+                const bobSpeedY = obj.bobSpeedY || 0.0024;
+                const bobAmpX = obj.bobAmpX || 0;
+                const bobSpeedX = obj.bobSpeedX || 0.0018;
+
+                x = baseX + panX;
+                x += Math.sin(elapsedTicks * bobSpeedX + phase) * bobAmpX;
+                y = baseY + panY;
+                y += Math.sin(elapsedTicks * bobSpeedY + phase * 1.07) * bobAmpY;
+                y += verticalFollow;
+                rotation = (obj.rotation || 0) + Math.sin(elapsedTicks * 0.0022 + phase) * (obj.rotationDrift || 0);
+            }
+
+            const isFront = obj.depth === "front";
+            return {
+                x, y, progress, visibility,
+                size: obj.size * (isFront ? 1.03 : 1),
+                rotation,
+                alpha: (isFront ? 0.96 : 0.86) * visibility,
+                mirrorX: !!obj.mirrorX,
+                outOfView
+            };
+        };
+
+        const drawSpaceAssets = (s, climb) => {
+            const visibleSpace = clamp((climb - SPACE_START) / 450, 0, 1);
+            const visibleFlybys = clamp((s.score - FLYBY_VISIBILITY_START_SCORE + 1) / Math.max(1, FLYBY_VISIBILITY_SCORE_RANGE), 0, 1);
+            const hasActiveFlybys = (Array.isArray(s.deco.activeRocketFlybys) && s.deco.activeRocketFlybys.length > 0)
+                || (Array.isArray(s.deco.activeMeteorFlybys) && s.deco.activeMeteorFlybys.length > 0);
+            if (visibleSpace <= 0.01 && visibleFlybys <= 0.01 && !hasActiveFlybys) return;
+
+            const active = s.deco.activeSpaceObject;
+            if (active && visibleSpace > 0.01) {
+                const state = getSpaceObjectWorldState(active, s);
+                if (state && !state.outOfView) {
+                    drawFloatingAsset(
+                        getSpaceAsset(active.type),
+                        visibleSpace * state.alpha,
+                        state.x,
+                        state.y,
+                        state.size,
+                        state.rotation,
+                        state.mirrorX,
+                        { rocketFlame: active.type === "rocket", flameFlicker: s.time.tick + (active.startTick || 0) }
+                    );
+                }
+            }
+
+            const activeRocketFlybys = Array.isArray(s.deco.activeRocketFlybys) ? s.deco.activeRocketFlybys : [];
+            const remainingRocketFlybys = [];
+            activeRocketFlybys.forEach((obj) => {
+                const state = getSpaceObjectWorldState(obj, s);
+                if (!state || state.outOfView) return;
+                remainingRocketFlybys.push(obj);
+                drawFloatingAsset(
+                    getSpaceAsset(obj.type),
+                    visibleFlybys * state.alpha,
+                    state.x, state.y, state.size, state.rotation, state.mirrorX,
+                    { rocketFlame: obj.type === "rocket", flameFlicker: s.time.tick + (obj.startTick || 0) }
+                );
+            });
+            s.deco.activeRocketFlybys = remainingRocketFlybys;
+
+            const activeMeteorFlybys = Array.isArray(s.deco.activeMeteorFlybys) ? s.deco.activeMeteorFlybys : [];
+            const remainingMeteorFlybys = [];
+            activeMeteorFlybys.forEach((obj) => {
+                const state = getSpaceObjectWorldState(obj, s);
+                if (!state || state.outOfView) return;
+                remainingMeteorFlybys.push(obj);
+                const dx = (obj.toX ?? 1.12) - (obj.fromX ?? -0.18);
+                const dy = (obj.toY ?? 0.8) - (obj.fromY ?? 0.2);
+                drawDirectionalSmokeTrail(
+                    state.x, state.y, state.size, dx, dy,
+                    visibleFlybys * state.alpha,
+                    s.time.tick + (obj.startTick || 0)
+                );
+                drawFloatingAsset(
+                    getSpaceAsset(obj.type),
+                    visibleFlybys * state.alpha,
+                    state.x, state.y, state.size, state.rotation, state.mirrorX
+                );
+            });
+            s.deco.activeMeteorFlybys = remainingMeteorFlybys;
+        };
+
+        const getAstronautFrame = (s) => {
+            const jumpAsset = assetsRef.current.astronaut;
+            const fallAsset = assetsRef.current.astronautFall;
+
+            if (s.gameState === "falling") {
+                if (fallAsset && fallAsset.ready && fallAsset.frames.length) {
+                    const total = fallAsset.frames.length;
+                    const fallTime = s.fallingPlatform?.fallTime || 0;
+                    const visualProgress = clamp(fallTime / FALL_ANIMATION_FRAMES, 0, 1);
+                    const fallFrameIndex = visualProgress >= 1
+                        ? total - 1
+                        : Math.min(total - 1, Math.floor(visualProgress * (total - 1)));
+                    return { frame: fallAsset.frames[fallFrameIndex], mode: "fall" };
+                }
+
+                if (jumpAsset && jumpAsset.ready && jumpAsset.frames.length) {
+                    return { frame: jumpAsset.frames[Math.max(0, jumpAsset.frames.length - 1)], mode: "fall" };
+                }
+            }
+
+            if (!jumpAsset || !jumpAsset.ready || !jumpAsset.frames.length) return null;
+            const total = jumpAsset.frames.length;
+            const maxFrameIndex = total - 1;
+
+            if (s.gameState === "jumping" || s.gameState === "respawning") {
+                const animationT = s.gameState === "respawning" ? s.respawnT : s.player.jumpT;
+                const jumpState = getJumpAnimationState(animationT, total);
+                return { frame: jumpAsset.frames[Math.min(maxFrameIndex, jumpState.frameIndex)], mode: "jump" };
+            }
+
+            const loopFrameIndex = ((Math.floor(s.time.idleFrameClock) % total) + total) % total;
+            return { frame: jumpAsset.frames[loopFrameIndex], mode: "idle" };
+        };
+
+        const drawPlatform = (s, p) => {
+            if (!p || p.alpha <= 0.01) return;
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, p.alpha);
+            ctx.translate(p.x + p.w / 2, p.y + p.h / 2);
+            ctx.rotate(p.rotation || 0);
+
+            const tappable = s.gameState === "waiting" && s.nextPlatforms.includes(p);
+            const active = p === s.currentPlatform || (s.gameState === "jumping" && p === s.chosenTarget) || (s.gameState === "falling" && p === s.fallingPlatform);
+            const left = -p.w / 2;
+            const top = -p.h / 2;
+            const grad = ctx.createLinearGradient(0, top, 0, top + p.h);
+            grad.addColorStop(0, active ? "#fff0a8" : "#ffe985");
+            grad.addColorStop(1, active ? "#f6c623" : "#f1b400");
+
+            if (tappable) {
+                ctx.save();
+                ctx.globalAlpha *= 0.16;
+                ctx.fillStyle = "#ffffff";
+                roundRect(left - 10, top - 12, p.w + 20, p.h + 20, 18);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            ctx.fillStyle = grad;
+            roundRect(left, top, p.w, p.h, 12);
+            ctx.fill();
+
+            ctx.fillStyle = active ? "rgba(255,255,255,0.34)" : "rgba(255,255,255,0.24)";
+            roundRect(left + 8, top + 4, p.w - 16, 6, 5);
+            ctx.fill();
+
+            const circleY = top - 32;
+            if (p.letter && p.circleAlpha > 0.01) {
+                ctx.save();
+                ctx.globalAlpha *= p.circleAlpha;
+                const rg = ctx.createRadialGradient(-s.circleR * 0.2, circleY - s.circleR * 0.2, 8, 0, circleY, s.circleR);
+                rg.addColorStop(0, "#ffffff");
+                rg.addColorStop(1, "#e9f3ff");
+                ctx.fillStyle = rg;
+                ctx.beginPath();
+                ctx.arc(0, circleY, s.circleR, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = "rgba(28,38,54,0.12)";
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.fillStyle = "#24303a";
+                ctx.font = `bold ${Math.floor(s.circleR * 1.4)}px ${DISPLAY_FONT_STACK}`;
+                ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.fillText(p.letter.toLowerCase(), 0, circleY + 1);
+                ctx.restore();
+            }
+            ctx.restore();
+        };
+
+        const drawPlayer = (s) => {
+            if (s.gameState === "cameraDrop") return;
+            const frameState = getAstronautFrame(s);
+            const footY = s.player.y + s.player.r;
+            const playerAlpha = s.gameState === "respawning" ? smoothStep(0, RESPAWN_FADE_PORTION, s.respawnT) : 1;
+
+            if (!frameState || !frameState.frame) {
+                ctx.save();
+                ctx.globalAlpha = playerAlpha;
+                ctx.font = `bold ${Math.floor(s.player.r * 2.2)}px ${DISPLAY_FONT_STACK}`;
+                ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+                ctx.fillText("👨‍🚀", s.player.x, footY + 6);
+                ctx.restore();
+                return;
+            }
+
+            const { frame, mode } = frameState;
+            const aspect = frame.width / Math.max(1, frame.height);
+            const drawScale = mode === "fall" ? FALL_DRAW_SCALE : 1;
+            const drawH = s.player.r * 4.5 * s.settings.astronautScale * drawScale;
+            const drawW = drawH * aspect;
+            const anchorY = mode === "fall" ? (s.player.y + s.player.r * 0.56) : footY;
+
+            ctx.save();
+            ctx.globalAlpha = playerAlpha;
+            ctx.translate(s.player.x, anchorY);
+            ctx.rotate(s.player.rotation || 0);
+            if (mode === "fall") {
+                const cropRight = Math.min(FALL_SOURCE_CROP_RIGHT, Math.max(0, frame.width - 2));
+                const sourceW = Math.max(1, frame.width - cropRight);
+                ctx.drawImage(frame, 0, 0, sourceW, frame.height, -drawW / 2, -drawH * 0.70, drawW, drawH);
+            } else {
+                ctx.drawImage(frame, -drawW / 2, -drawH, drawW, drawH);
+            }
+            ctx.restore();
+        };
+
+        const drawRepeatQuestionButton = (s) => {
+            const asset = assetsRef.current.repeatButton;
+            const enabled = Boolean(s.targetLetter);
+            const pressed = repeatPressedRef.current;
+            const maxW = Math.min(190, s.width * 0.34);
+            const aspect = asset?.ready && asset.img?.width && asset.img?.height ? asset.img.width / Math.max(1, asset.img.height) : 1;
+            const btnW = maxW;
+            const btnH = btnW / Math.max(0.4, aspect);
+            const x = (s.width - btnW) / 2, y = 14;
+
+            repeatButtonRectRef.current = { x, y, w: btnW, h: btnH, enabled };
+
+            ctx.save();
+            ctx.globalAlpha = enabled ? 1 : 0.58;
+            ctx.translate(x + btnW / 2, y + btnH / 2);
+            if (pressed) ctx.scale(0.94, 0.94);
+
+            if (asset?.ready && asset.img) {
+                ctx.filter = pressed ? "brightness(0.82)" : "none";
+                ctx.shadowColor = pressed ? "rgba(255, 214, 88, 0.22)" : "rgba(0,0,0,0.28)";
+                ctx.shadowBlur = pressed ? 10 : 18;
+                ctx.drawImage(asset.img, -btnW / 2, -btnH / 2, btnW, btnH);
+                ctx.filter = "none";
+            } else {
+                ctx.fillStyle = enabled ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.62)";
+                ctx.beginPath();
+                ctx.roundRect(-btnW / 2, -btnH / 2, btnW, btnH, 22);
+                ctx.fill();
+                ctx.fillStyle = "#24303a";
+                ctx.font = `bold ${Math.floor(btnH * 0.26)}px ${DISPLAY_FONT_STACK}`;
+                ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.fillText("Herhaal vraag", 0, 0);
+            }
+
+            if (pressed) {
+                ctx.strokeStyle = "rgba(255, 231, 123, 0.95)";
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.roundRect(-btnW / 2 + 6, -btnH / 2 + 6, btnW - 12, btnH - 12, 18);
+                ctx.stroke();
+            }
+            ctx.restore();
+        };
+
+        const collectPlatforms = (s) => {
+            const list = [], seen = new Set();
+            const add = (p) => { if (!p || seen.has(p)) return; seen.add(p); list.push(p); };
+            add(s.currentPlatform); add(s.chosenTarget);
+            s.nextPlatforms.forEach(add); s.oldPlatforms.forEach(add);
+            return list;
+        };
+        const pruneOldPlatforms = (s) => {
+            const minY = s.cameraY - 260, maxY = s.cameraY + s.height + 620;
+            s.oldPlatforms = s.oldPlatforms.filter((p) => p && p.alpha > 0.02 && p.y > minY && p.y < maxY);
+        };
+
+        window.addEventListener("resize", handleResize);
+        handleResize();
+
+        const loop = (ts = 0) => {
+            const s = stateRef.current;
+            const rawDt = s.time.lastTs ? (ts - s.time.lastTs) : FRAME_TIME_AT_60FPS;
+            s.time.lastTs = ts;
+            const dtFrames = clamp(rawDt / FRAME_TIME_AT_60FPS, 0.6, 2.2);
+            s.time.tick += dtFrames;
+            s.time.idleFrameClock += (Math.max(4, s.settings.idleAnimFps) / 60) * dtFrames;
+            s.cameraY += (s.targetCameraY - s.cameraY) * Math.min(1, CAMERA_LERP * dtFrames);
+            updateTimedRocketFlybys(s);
+            updateTimedMeteorFlybys(s);
+
+            if (s.gameState === "waiting" || s.gameState === "landingPause") {
+                updatePlayerIdlePose();
+                if (s.gameState === "landingPause") {
+                    s.landingPauseTimer -= dtFrames;
+                    if (s.landingPauseTimer <= 0) {
+                        s.gameState = "waiting";
+                        setGameState("waiting");
+                    }
+                }
+            } else if (s.gameState === "jumping") {
+                const astronautFrameCount = Math.max(2, assetsRef.current.astronaut?.frames?.length || ASTRONAUT_TOTAL_FRAMES);
+                s.player.jumpT += dtFrames / Math.max(8, s.settings.jumpFrames);
+                const t = Math.min(1, s.player.jumpT);
+                const jumpState = getJumpAnimationState(t, astronautFrameCount);
+                const motionT = clamp(jumpState.motionProgress, 0, 1);
+                const eased = easeInOut(motionT);
+                const arc = Math.sin(motionT * Math.PI) * s.jumpArc * s.settings.jumpAnimSpeed;
+                s.player.x = lerp(s.player.jumpStartX, s.player.jumpEndX, eased);
+                s.player.y = lerp(s.player.jumpStartY, s.player.jumpEndY, eased) - arc;
+                s.player.squashX = 1; s.player.squashY = 1; s.player.shadowScale = 1 - Math.sin(motionT * Math.PI) * 0.42; s.player.rotation = 0;
+
+                if (t >= 1) {
+                    if (s.chosenTarget && s.chosenTarget.correct) {
+                        s.currentPlatform = s.chosenTarget;
+                        s.chosenTarget = null;
+                        s.nextPlatforms = [];
+                        s.score += 1;
+                        setScore(s.score);
+                        triggerSpaceAssetForScore(s);
+                        triggerRocketFlybyForScore(s);
+                        triggerMeteorFlybyForScore(s);
+                        prepareNextRound();
+                        s.nextPlatforms = s.pendingNextPlatforms;
+                        s.pendingNextPlatforms = [];
+                        s.gameState = "landingPause";
+                        setGameState("landingPause");
+                        s.landingPauseTimer = 8;
+                        placePlayerOnPlatform();
+                        s.time.idleFrameClock = 0;
+                        updateCameraTarget();
+                        speakLetter(s.targetLetter);
+                    } else if (s.chosenTarget) {
+                        s.currentPlatform = s.chosenTarget;
+                        s.fallingPlatform = s.chosenTarget;
+                        s.nextPlatforms = [];
+                        s.fallingPlatform.falling = true;
+                        s.fallingPlatform.fallSpeed = 0;
+                        s.fallingPlatform.fallTime = 0;
+                        s.fallingPlatform.fallStartX = s.fallingPlatform.x;
+                        s.fallingPlatform.fallStartY = s.fallingPlatform.y;
+                        s.fallingPlatform.driftX = s.player.jumpEndX >= s.player.jumpStartX ? 0.55 : -0.55;
+                        s.fallingPlatform.fallTiltDir = s.fallingPlatform.driftX >= 0 ? 1 : -1;
+                        s.fallingPlatform.rotation = 0;
+                        s.fallingPlatform.rotationSpeed = 0;
+                        s.fallingPlatform.astronautOffsetY = WRONG_FALL_START_OFFSET;
+                        s.player.vy = 0;
+                        s.player.jumpT = 1;
+                        placePlayerOnPlatform();
+                        s.player.y += WRONG_FALL_START_OFFSET;
+                        s.fallCameraStartY = s.cameraY;
+                        s.fallCameraTargetY = s.cameraY;
+                        s.gameState = "falling";
+                        setGameState("falling");
+                    }
+                }
+            } else if (s.gameState === "falling") {
+                const fallingPlatform = s.fallingPlatform;
+                s.targetCameraY = s.fallCameraStartY;
+
+                if (fallingPlatform) {
+                    fallingPlatform.fallTime += dtFrames;
+                    const anticipationFrames = 10, dropFrames = 84;
+                    const astronautFallOffset = fallingPlatform.astronautOffsetY || 0;
+
+                    if (fallingPlatform.fallTime <= anticipationFrames) {
+                        const tAnt = clamp(fallingPlatform.fallTime / anticipationFrames, 0, 1);
+                        const dip = smoothStep(0, 1, tAnt) * 12;
+                        const wobble = Math.sin(tAnt * Math.PI);
+                        fallingPlatform.x = fallingPlatform.fallStartX;
+                        fallingPlatform.y = fallingPlatform.fallStartY + dip;
+                        fallingPlatform.rotation = fallingPlatform.fallTiltDir * 0.04 * wobble;
+                        fallingPlatform.alpha = 1;
+
+                        s.player.x = fallingPlatform.x + fallingPlatform.w / 2;
+                        s.player.y = getPlayerContactY(fallingPlatform.y, s.circleR) - s.player.r + astronautFallOffset;
+                        s.player.shadowScale = 1 - tAnt * 0.08;
+                        s.player.squashX = 1 + tAnt * 0.05;
+                        s.player.squashY = 1 - tAnt * 0.05;
+                        s.player.rotation = clamp((fallingPlatform.rotation || 0) * 0.35, -0.12, 0.12);
+                    } else {
+                        const rawDropT = Math.max(0, (fallingPlatform.fallTime - anticipationFrames) / dropFrames);
+                        const cappedT = Math.min(rawDropT, 1);
+                        const easedDrop = 1 - Math.pow(1 - cappedT, 3);
+                        const extraDrop = Math.max(0, rawDropT - 1) * (s.height * 0.46);
+                        const verticalDrop = 12 + easedDrop * (s.height * 1.02) + extraDrop;
+                        const liftDuringDrop = Math.min(10, rawDropT * 10);
+
+                        fallingPlatform.x = fallingPlatform.fallStartX;
+                        fallingPlatform.y = fallingPlatform.fallStartY + verticalDrop;
+                        fallingPlatform.rotation = fallingPlatform.fallTiltDir * 0.03;
+                        fallingPlatform.alpha = 1;
+
+                        s.player.x = fallingPlatform.x + fallingPlatform.w / 2;
+                        s.player.y = getPlayerContactY(fallingPlatform.y, s.circleR) - s.player.r + astronautFallOffset - liftDuringDrop;
+                        s.player.shadowScale = Math.max(0.62, 1 - rawDropT * 0.14);
+                        s.player.squashX = 1; s.player.squashY = 1; s.player.rotation = 0;
+                    }
+                }
+
+                if (!fallingPlatform || s.player.y - s.cameraY > s.height + s.player.r * 4) {
+                    s.player.rotation = 0; s.player.squashX = 1; s.player.squashY = 1;
+                    queueRespawnFromBottom();
+                }
+            } else if (s.gameState === "cameraDrop") {
+                s.targetCameraY = s.baseCameraY;
+                s.player.rotation = 0; s.player.squashX = 1; s.player.squashY = 1;
+                if (Math.abs(s.baseCameraY - s.cameraY) < 1.5) {
+                    s.gameState = "respawning";
+                    setGameState("respawning");
+                }
+            } else if (s.gameState === "respawning") {
+                const respawnT = Math.min(1, s.respawnT + dtFrames / RESPAWN_JUMP_FRAMES);
+                s.respawnT = respawnT;
+                s.respawnAlpha = smoothStep(0, RESPAWN_FADE_PORTION, respawnT);
+                s.targetCameraY = s.baseCameraY;
+                const eased = 1 - Math.pow(1 - respawnT, 3);
+                const arc = Math.sin(respawnT * Math.PI) * s.respawnArc;
+                s.player.x = lerp(s.respawnStartX, s.respawnEndX, eased);
+                s.player.y = lerp(s.respawnStartY, s.respawnEndY, eased) - arc;
+                s.player.shadowScale = Math.max(0.72, 1 - Math.sin(respawnT * Math.PI) * 0.2);
+                s.player.squashX = 1; s.player.squashY = 1; s.player.rotation = 0;
+                if (respawnT >= 1) {
+                    s.respawnAlpha = 1;
+                    placePlayerOnPlatform();
+                    prepareNextRound();
+                    startNextRoundView();
+                }
+            }
+
+            pruneOldPlatforms(s);
+            const allPlatforms = collectPlatforms(s);
+            allPlatforms.forEach((p) => {
+                if (!p) return;
+                const targetAlpha = s.nextPlatforms.includes(p) ? 1 : 0;
+                p.circleAlpha += (targetAlpha - p.circleAlpha) * Math.min(1, 0.1 * dtFrames);
+            });
+
+            ctx.clearRect(0, 0, s.width, s.height);
+            const climb = Math.max(0, s.baseCameraY - s.cameraY);
+
+            drawSky(s, climb);
+            drawCloudLayer(s, climb);
+            drawMountainsLayer(s, climb);
+            drawGroundLayer(s, climb);
+            drawStars(s, climb);
+            drawSpaceAssets(s, climb);
+            drawRepeatQuestionButton(s);
+
+            ctx.save();
+            ctx.translate(0, -s.cameraY);
+            allPlatforms.forEach((p) => drawPlatform(s, p));
+            drawPlayer(s);
+            ctx.restore();
+
+            animationFrameId = requestAnimationFrame(loop);
+        };
+
+        loop();
+        return () => {
+            window.removeEventListener("resize", handleResize);
+            cancelAnimationFrame(animationFrameId);
+        };
+    }, [speakLetter]);
+
+    const getTappedPlatform = (clientX, clientY) => {
+        const s = stateRef.current;
+        if (s.gameState !== "waiting") return null;
+        const worldY = clientY + s.cameraY;
+        const candidates = s.nextPlatforms.filter(Boolean).map((p) => {
+            const cx = p.x + p.w / 2;
+            const cy = p.y - 32;
+            const insideRect = (
+                clientX >= p.x - HIT_PADDING_X &&
+                clientX <= p.x + p.w + HIT_PADDING_X &&
+                worldY >= cy - s.circleR - HIT_PADDING_Y &&
+                worldY <= p.y + p.h + HIT_PADDING_Y
+            );
+            const dx = clientX - cx, dy = worldY - cy;
+            const insideCircle = (dx * dx) + (dy * dy) <= Math.pow(s.circleR + 20, 2);
+            const distance = Math.abs(clientX - cx) + Math.abs(worldY - cy);
+            return { p, inside: insideRect || insideCircle, distance };
+        });
+        const directHit = candidates.find((item) => item.inside);
+        if (directHit) return directHit.p;
+        const nearest = candidates.sort((a, b) => a.distance - b.distance)[0];
+        if (nearest && nearest.distance < s.platformW * 0.9) return nearest.p;
+        return null;
+    };
+
+    const handlePointerDown = (e) => {
+        const rect = canvasRef.current?.getBoundingClientRect();
+        const ui = repeatButtonRectRef.current;
+        if (rect && ui && ui.enabled) {
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            if (x >= ui.x && x <= ui.x + ui.w && y >= ui.y && y <= ui.y + ui.h) {
+                handleRepeatQuestion();
+                return;
+            }
+        }
+        const target = getTappedPlatform(e.clientX, e.clientY);
+        if (target) choosePlatform(target);
+    };
+
+    const astronautStatus = assetsRef.current.astronaut;
+    const fallAstronautStatus = assetsRef.current.astronautFall;
+
+    return (
+        <div className="app">
+            <canvas ref={canvasRef} onPointerDown={handlePointerDown}></canvas>
+
+            <div className="ui-pill score-pill">Score: {score}</div>
+
+            <button
+                className="top-icon-btn music-toggle-btn"
+                onClick={toggleBackgroundMusic}
+                title={musicEnabled ? "Muziek uit" : "Muziek aan"}
+                aria-label={musicEnabled ? "Muziek uit" : "Muziek aan"}
+            >
+                {musicEnabled ? "🎵" : "🔇"}
+            </button>
+
+            <button
+                className="settings-toggle"
+                onClick={() => setShowSettings((v) => !v)}
+                aria-label="Instellingen"
+            >
+                ⚙️
+            </button>
+
+            {showSettings && (
+                <div className="settings-panel">
+                    <div className="settings-title">Instellingen</div>
+                    <div className="settings-subtitle">Kies welke letters gebruikt worden.</div>
+
+                    <div className="slider-group">
+                        <label>
+                            <span>Letters</span>
+                            <span>{selectedLetters.length} gekozen</span>
+                        </label>
+
+                        <div className="settings-actions">
+                            <button className="mini-btn" onClick={deselectAllLetters}>Niets selecteren</button>
+                            <button className="mini-btn" onClick={selectAllLetters}>Alles selecteren</button>
+                            <button className="mini-btn" onClick={selectTreatedLetters}>Behandelde letters</button>
+                        </div>
+
+                        <div className="letter-grid">
+                            {PLAYABLE_LETTERS.map((letter) => {
+                                const active = selectedLetters.includes(letter);
+                                return (
+                                    <label key={letter} className={`letter-chip ${active ? "active" : ""}`}>
+                                        <input
+                                            type="checkbox"
+                                            checked={active}
+                                            onChange={() => toggleLetter(letter)}
+                                        />
+                                        <span>{letter}</span>
+                                    </label>
+                                );
+                            })}
+                        </div>
+
+                        <div className="letters-note">
+                            Alleen letters met een echte opname zijn beschikbaar. Standaard staan de behandelde letters geselecteerd.
+                        </div>
+                        <div className="letters-note">
+                            Letters zonder opname, zoals c, zijn automatisch niet speelbaar.
+                        </div>
+
+                        {selectedLetters.length < 2 && (
+                            <div className="warning-note">
+                                Kies minimaal 2 letters om te kunnen spelen.
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="slider-help">
+                        De vraag wordt alleen uitgesproken. Gebruik de knop bovenin het midden om de vraag opnieuw te horen. Bij een fout antwoord verdwijnt de astronaut eerst onder uit beeld. Daarna zakt de camera naar beneden en komt de astronaut onderin weer infadend terug op het startplatform.
+                    </div>
+                </div>
+            )}
+
+            {gameState === "start" && (
+                <div className="overlay">
+                    <div className="panel">
+                        <h1>Letter-Stuiter</h1>
+                        <p>Spring op de juiste letter.</p>
+                        <p className="sub">
+                            Je klimt door een landschap dat langzaam overgaat naar een donkere hemel.
+                        </p>
+                        <p className="sub" style={{ marginBottom: "14px" }}>
+                            Geselecteerde letters: {selectedLetters.length ? selectedLetters.join(", ") : "geen"}
+                        </p>
+                        <button className="start-btn" onClick={startGame} disabled={!canStartGame}>START</button>
+                        {!canStartGame && (
+                            <div className="warning-note">Kies minimaal 2 letters in de instellingen.</div>
+                        )}
+                        {(astronautStatus.loading || fallAstronautStatus.loading || (!musicReady && !musicFailed)) && (
+                            <div className="loading-note">Animaties en muziek worden geladen...</div>
+                        )}
+                        {(astronautStatus.failed || fallAstronautStatus.failed || musicFailed) && (
+                            <div className="loading-note">Controleer of astronaut_jump.mp4, val.mp4 en Sterrenvriendjes.mp3 in dezelfde map staan als dit html-bestand.</div>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+</body>
+</html>
